@@ -1,10 +1,11 @@
-use std::num::ParseIntError;
+use crate::messages::gbq::parse_gbq;
+use crate::messages::gbq::GBQMessage;
 use crate::fields::sentence_type::parse_sentence_type;
 use crate::fields::sentence_type::SentenceType;
 use crate::fields::talker::parse_talker;
 use crate::fields::talker::Talker;
-use crate::messages::datum_reference::parse_datum_reference;
-use crate::messages::datum_reference::DatumReference;
+use crate::messages::dtm::parse_dtm;
+use crate::messages::dtm::DTMMessage;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -12,8 +13,8 @@ use nom::IResult;
 
 #[derive(Debug, PartialEq)]
 enum Message<'a> {
-    DTM(DatumReference<'a>),
-    GBQ,
+    DTM(DTMMessage<'a>),
+    GBQ(GBQMessage<'a>),
     GBS,
     GGA,
     GLL,
@@ -89,14 +90,18 @@ pub struct Sentence<'a> {
     message: Message<'a>,
 }
 
-fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
+pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
     let (remaining, sentence_type) = parse_sentence_type(input)?;
     let (data_buffer, (talker, message_type)) = get_headers_if_sentence_valid(remaining)?;
 
     let (remaining_data, message) = match message_type {
         MessageType::DTM => {
-            let (remaining, data) = parse_datum_reference(data_buffer)?;
+            let (remaining, data) = parse_dtm(data_buffer)?;
             (remaining, Message::DTM(data))
+        },
+        MessageType::GBQ => {
+            let (remaining, data) = parse_gbq(data_buffer)?;
+            (remaining, Message::GBQ(data))
         }
         _ => unimplemented!(),
     };
@@ -125,7 +130,7 @@ fn get_headers_if_sentence_valid(input: &str) -> IResult<&str, (Talker, MessageT
     if crlf(after_checksum)?.0.len() != 0 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::NonEmpty)));
     }
-    Ok(tuple((parse_talker, parse_message_type)) (data)?)
+    Ok(tuple((parse_talker, parse_message_type))(data)?)
 }
 
 fn parse_checksum(input: &str) -> IResult<&str, u8> {
@@ -142,7 +147,8 @@ fn decode_cs(s: &str) -> Result<u8, nom::Err<(&str, nom::error::ErrorKind)>> {
     if s.chars().nth(1).is_none() {
         Err(nom::Err::Failure((s, nom::error::ErrorKind::LengthValue)))
     } else {
-        u8::from_str_radix(&s[0..2], 16).map_err(|_| nom::Err::Failure((s, nom::error::ErrorKind::Digit)))
+        u8::from_str_radix(&s[0..2], 16)
+            .map_err(|_| nom::Err::Failure((s, nom::error::ErrorKind::Digit)))
     }
 }
 
@@ -166,7 +172,7 @@ mod talker_tests {
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,
-            message: Message::DTM(DatumReference {
+            message: Message::DTM(DTMMessage {
                 datum: "W84",
                 sub_datum: "",
                 lat: Some(Minute(0.)),
@@ -188,7 +194,7 @@ mod talker_tests {
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,
-            message: Message::DTM(DatumReference {
+            message: Message::DTM(DTMMessage {
                 datum: "999",
                 sub_datum: "",
                 lat: Some(Minute(0.08)),
@@ -210,7 +216,7 @@ mod talker_tests {
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,
-            message: Message::DTM(DatumReference {
+            message: Message::DTM(DTMMessage {
                 datum: "999",
                 sub_datum: "",
                 lat: None,
@@ -219,6 +225,21 @@ mod talker_tests {
                 ew: EastWest::East,
                 alt: None,
                 ref_datum: "W84",
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+        #[test]
+    fn test_parse_gbq() {
+        let input = "$UPGBQ,RMC*21\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::MicroprocessorController,
+            message: Message::GBQ(GBQMessage {
+                msg_id: "RMC"
             }),
         };
 

@@ -2,7 +2,7 @@ extern crate nom;
 
 mod fields;
 mod messages;
-mod sentence;
+pub mod sentence;
 
 #[cfg(test)]
 mod tests {

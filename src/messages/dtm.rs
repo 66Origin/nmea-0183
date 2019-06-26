@@ -13,7 +13,7 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
-pub struct DatumReference<'a> {
+pub struct DTMMessage<'a> {
     pub datum: &'a str,
     pub sub_datum: &'a str,
     pub lat: Option<Minute>,
@@ -24,7 +24,7 @@ pub struct DatumReference<'a> {
     pub ref_datum: &'a str,
 }
 
-pub fn parse_datum_reference(input: &str) -> IResult<&str, DatumReference> {
+pub fn parse_dtm(input: &str) -> IResult<&str, DTMMessage> {
     let (remaining, datum_ref) = tuple((
         parse_string,
         parse_string,
@@ -37,7 +37,7 @@ pub fn parse_datum_reference(input: &str) -> IResult<&str, DatumReference> {
     ))(input)?;
     Ok((
         remaining,
-        DatumReference {
+        DTMMessage {
             datum: datum_ref.0,
             sub_datum: datum_ref.1,
             lat: datum_ref.2,
@@ -56,11 +56,11 @@ mod tests {
     use crate::fields::cardinality::{EastWest, NorthSouth};
 
     #[test]
-    fn test_parse_datum_reference() {
+    fn test_parse_dtm() {
         let input = "W84,,0.0,N,0.0,E,0.0,W84";
         let expected = Ok((
             "",
-            DatumReference {
+            DTMMessage {
                 datum: "W84",
                 sub_datum: "",
                 lat: Some(Minute(0.)),
@@ -72,6 +72,6 @@ mod tests {
             },
         ));
 
-        assert_eq!(expected, parse_datum_reference(input));
+        assert_eq!(expected, parse_dtm(input));
     }
 }
