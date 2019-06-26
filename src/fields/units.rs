@@ -109,7 +109,7 @@ pub fn parse_degree(input: &str) -> IResult<&str, Option<Degree>> {
     let (remaining, maybe_float) = parse_float(input)?;
 
     let maybe_degree = if let Some(float) = maybe_float {
-        Some(Degree(float))
+        Some(Degree(float / 100.)) // 4717.11399 is actually 
     } else {
         None
     };

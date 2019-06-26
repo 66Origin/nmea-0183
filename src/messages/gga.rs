@@ -85,9 +85,9 @@ mod tests {
             "",
             GGAMessage {
                 time: Some(NaiveTime::from_hms_milli(09, 27, 25, 00)),
-                lat: Some(Degree(4717.11399)),
+                lat: Some(Degree(47.1711399)),
                 ns: NorthSouth::North,
-                lon: Some(Degree(833.91590)),
+                lon: Some(Degree(8.3391590)),
                 ew: EastWest::East,
                 quality: Fix::AutonomousGNSSFix,
                 num_sv: Some(8),
