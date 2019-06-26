@@ -16,12 +16,7 @@ pub fn parse_string(input: &str) -> IResult<&str, &str> {
 }
 
 pub fn parse_last_string(input: &str) -> IResult<&str, &str> {
-    if input.len() < 1 {
-        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
-    }
-    let (with_separator, parse_string) = take_until("*")(input)?;
-    // Presence of at least one more character has already been checked
-    Ok((&with_separator[1..], parse_string))
+    Ok(("", input))
 }
 
 pub fn parse_float(input: &str) -> IResult<&str, Option<f64>> {
@@ -100,24 +95,24 @@ mod tests {
     #[test]
     fn test_parse_last_string() {
         let input = "foo_bar*";
-        let expected = Ok(("", "foo_bar"));
+        let expected = Ok(("", "foo_bar*"));
         assert_eq!(expected, parse_last_string(input));
     }
 
     #[test]
     fn test_parse_empty_last_string() {
-        let input = "*";
+        let input = "";
         let expected = Ok(("", ""));
         assert_eq!(expected, parse_last_string(input));
     }
 
     #[test]
     fn test_parse_string_sequence() {
-        let input = "and one,and two,and three,and four,and five*";
-        let expected_one = Ok(("and two,and three,and four,and five*", "and one"));
-        let expected_two = Ok(("and three,and four,and five*", "and two"));
-        let expected_three = Ok(("and four,and five*", "and three"));
-        let expected_four = Ok(("and five*", "and four"));
+        let input = "and one,and two,and three,and four,and five";
+        let expected_one = Ok(("and two,and three,and four,and five", "and one"));
+        let expected_two = Ok(("and three,and four,and five", "and two"));
+        let expected_three = Ok(("and four,and five", "and three"));
+        let expected_four = Ok(("and five", "and four"));
         let expected_five = Ok(("", "and five"));
         assert_eq!(expected_one, parse_string(input));
         assert_eq!(expected_two, parse_string(expected_one.unwrap().0));

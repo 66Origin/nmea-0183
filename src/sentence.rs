@@ -1,9 +1,12 @@
+use std::num::ParseIntError;
 use crate::fields::sentence_type::parse_sentence_type;
 use crate::fields::sentence_type::SentenceType;
 use crate::fields::talker::parse_talker;
 use crate::fields::talker::Talker;
 use crate::messages::datum_reference::parse_datum_reference;
 use crate::messages::datum_reference::DatumReference;
+use nom::bytes::complete::take_until;
+use nom::character::complete::crlf;
 use nom::sequence::tuple;
 use nom::IResult;
 
@@ -87,26 +90,67 @@ pub struct Sentence<'a> {
 }
 
 fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
-    let (remaining, sentence_ref) =
-        tuple((parse_sentence_type, parse_talker, parse_message_type))(input)?;
-    //TODO: checksum + CRLF here
-    let after_crlf = "";
-    let (_, message) = match sentence_ref.2 {
+    let (remaining, sentence_type) = parse_sentence_type(input)?;
+    let (data_buffer, (talker, message_type)) = get_headers_if_sentence_valid(remaining)?;
+
+    let (remaining_data, message) = match message_type {
         MessageType::DTM => {
-            let (remaining, data) = parse_datum_reference(remaining)?;
+            let (remaining, data) = parse_datum_reference(data_buffer)?;
             (remaining, Message::DTM(data))
         }
         _ => unimplemented!(),
     };
 
-    Ok((
-        after_crlf,
-        Sentence {
-            sentence_type: sentence_ref.0,
-            talker: sentence_ref.1,
-            message,
-        },
-    ))
+    if remaining_data.len() == 0 {
+        Ok((
+            remaining_data,
+            Sentence {
+                sentence_type,
+                talker,
+                message,
+            },
+        ))
+    } else {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::NonEmpty)));
+    }
+}
+
+fn get_headers_if_sentence_valid(input: &str) -> IResult<&str, (Talker, MessageType)> {
+    let (after_data, data) = take_until("*")(input)?;
+    // Index subscription is safe because take_until does not consume the pattern
+    let (after_checksum, checksum) = parse_checksum(&after_data[1..])?;
+    if !sentence_is_valid(data, checksum) {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Verify)));
+    }
+    if crlf(after_checksum)?.0.len() != 0 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::NonEmpty)));
+    }
+    Ok(tuple((parse_talker, parse_message_type)) (data)?)
+}
+
+fn parse_checksum(input: &str) -> IResult<&str, u8> {
+    let (after_cs, maybe_cs) = take_until("\r")(input)?;
+    if let Ok(cs) = decode_cs(maybe_cs) {
+        Ok((after_cs, cs))
+    } else {
+        Err(nom::Err::Failure((input, nom::error::ErrorKind::Digit)))
+    }
+}
+
+fn decode_cs(s: &str) -> Result<u8, nom::Err<(&str, nom::error::ErrorKind)>> {
+    // The checksum is supposed to be 2 characters wide
+    if s.chars().nth(1).is_none() {
+        Err(nom::Err::Failure((s, nom::error::ErrorKind::LengthValue)))
+    } else {
+        u8::from_str_radix(&s[0..2], 16).map_err(|_| nom::Err::Failure((s, nom::error::ErrorKind::Digit)))
+    }
+}
+
+fn sentence_is_valid(data: &str, checksum: u8) -> bool {
+    let computed = data.chars().fold(0, |sum, c| sum ^ c as u8);
+    println!("{:X} ", computed);
+    println!("{:X} ", checksum);
+    computed == checksum
 }
 
 #[cfg(test)]
@@ -117,8 +161,8 @@ mod talker_tests {
     use crate::fields::units::Minute;
 
     #[test]
-    fn test_parse_dtm() {
-        let input = "$GPDTM,W84,,0.0,N,0.0,E,0.0,W84*6F";
+    fn test_parse_dtm_0_lat_lon_alt() {
+        let input = "$GPDTM,W84,,0.0,N,0.0,E,0.0,W84*6F\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,
@@ -140,7 +184,7 @@ mod talker_tests {
 
     #[test]
     fn test_parse_dtm2() {
-        let input = "$GPDTM,999,,0.08,N,0.07,E,-47.7,W84*1C";
+        let input = "$GPDTM,999,,0.08,N,0.07,E,-47.7,W84*1B\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,
@@ -162,7 +206,7 @@ mod talker_tests {
 
     #[test]
     fn test_parse_dtm_no_lat_lon_alt() {
-        let input = "$GPDTM,999,,,N,,E,,W84*1C";
+        let input = "$GPDTM,999,,,N,,E,,W84*23\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,

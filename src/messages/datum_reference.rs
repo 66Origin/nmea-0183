@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_parse_datum_reference() {
-        let input = "W84,,0.0,N,0.0,E,0.0,W84*";
+        let input = "W84,,0.0,N,0.0,E,0.0,W84";
         let expected = Ok((
             "",
             DatumReference {
