@@ -38,6 +38,25 @@ pub fn parse_float(input: &str) -> IResult<&str, Option<f64>> {
     }
 }
 
+pub fn parse_u8(input: &str) -> IResult<&str, Option<u8>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, field) = take_until(",")(input)?;
+    // The field is valid, but there is no value
+    if field.len() == 0 {
+        // Presence of at least one more character has already been checked
+        Ok((&remaining[1..], None))
+    // The field is a valid float
+    } else if let Ok(raw) = field.parse::<u8>() {
+        // Presence of at least one more character has already been checked
+        Ok((&remaining[1..], Some(raw)))
+    // The field is not a valid float
+    } else {
+        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

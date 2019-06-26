@@ -1,11 +1,13 @@
-use crate::messages::gbq::parse_gbq;
-use crate::messages::gbq::GBQMessage;
 use crate::fields::sentence_type::parse_sentence_type;
 use crate::fields::sentence_type::SentenceType;
 use crate::fields::talker::parse_talker;
 use crate::fields::talker::Talker;
 use crate::messages::dtm::parse_dtm;
 use crate::messages::dtm::DTMMessage;
+use crate::messages::gbq::parse_gbq;
+use crate::messages::gbq::GBQMessage;
+use crate::messages::gga::parse_gga;
+use crate::messages::gga::GGAMessage;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -16,7 +18,7 @@ enum Message<'a> {
     DTM(DTMMessage<'a>),
     GBQ(GBQMessage<'a>),
     GBS,
-    GGA,
+    GGA(GGAMessage),
     GLL,
     GLQ,
     GNQ,
@@ -98,10 +100,14 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::DTM => {
             let (remaining, data) = parse_dtm(data_buffer)?;
             (remaining, Message::DTM(data))
-        },
+        }
         MessageType::GBQ => {
             let (remaining, data) = parse_gbq(data_buffer)?;
             (remaining, Message::GBQ(data))
+        }
+        MessageType::GGA => {
+            let (remaining, data) = parse_gga(data_buffer)?;
+            (remaining, Message::GGA(data))
         }
         _ => unimplemented!(),
     };
@@ -145,7 +151,7 @@ fn parse_checksum(input: &str) -> IResult<&str, u8> {
 fn decode_cs(s: &str) -> Result<u8, nom::Err<(&str, nom::error::ErrorKind)>> {
     // The checksum is supposed to be 2 characters wide
     if s.chars().nth(1).is_none() {
-        Err(nom::Err::Failure((s, nom::error::ErrorKind::LengthValue)))
+        return Err(nom::Err::Failure((s, nom::error::ErrorKind::Complete)));
     } else {
         u8::from_str_radix(&s[0..2], 16)
             .map_err(|_| nom::Err::Failure((s, nom::error::ErrorKind::Digit)))
@@ -163,8 +169,11 @@ fn sentence_is_valid(data: &str, checksum: u8) -> bool {
 mod talker_tests {
     use super::*;
     use crate::fields::cardinality::{EastWest, NorthSouth};
+    use crate::fields::units::Degree;
+    use crate::fields::units::Fix;
     use crate::fields::units::Meter;
     use crate::fields::units::Minute;
+    use chrono::naive::NaiveTime;
 
     #[test]
     fn test_parse_dtm_0_lat_lon_alt() {
@@ -232,14 +241,38 @@ mod talker_tests {
         assert_eq!(expected_output, parse_sentence(input));
     }
 
-        #[test]
+    #[test]
     fn test_parse_gbq() {
         let input = "$UPGBQ,RMC*21\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::MicroprocessorController,
-            message: Message::GBQ(GBQMessage {
-                msg_id: "RMC"
+            message: Message::GBQ(GBQMessage { msg_id: "RMC" }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gga() {
+        let input = "$GPGGA,092725.00,4717.11399,N,00833.91590,E,1,08,1.01,499.6,M,48.0,M,,*5B\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::GGA(GGAMessage {
+                time: Some(NaiveTime::from_hms_milli(09, 27, 25, 00)),
+                lat: Some(Degree(4717.11399)),
+                ns: NorthSouth::North,
+                lon: Some(Degree(833.91590)),
+                ew: EastWest::East,
+                quality: Fix::AutonomousGNSSFix,
+                num_sv: Some(8),
+                hdop: Some(1.01),
+                alt: Some(Meter(499.6)),
+                sep: Some(Meter(48.)),
+                diff_age: None,
+                diff_station: None,
             }),
         };
 
