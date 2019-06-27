@@ -6,6 +6,8 @@ use crate::messages::dtm::*;
 use crate::messages::gbq::*;
 use crate::messages::gga::*;
 use crate::messages::gll::*;
+use crate::messages::glq::*;
+use crate::messages::gnq::*;
 use crate::messages::gsa::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
@@ -22,8 +24,8 @@ enum Message<'a> {
     GBS,
     GGA(GGAMessage),
     GLL(GLLMessage),
-    GLQ,
-    GNQ,
+    GLQ(GLQMessage<'a>),
+    GNQ(GNQMessage<'a>),
     GNS,
     GPQ,
     GRS,
@@ -130,6 +132,14 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::RMC => {
             let (remaining, data) = parse_rmc(data_buffer)?;
             (remaining, Message::RMC(data))
+        }
+        MessageType::GLQ => {
+            let (remaining, data) = parse_glq(data_buffer)?;
+            (remaining, Message::GLQ(data))
+        }
+        MessageType::GNQ => {
+            let (remaining, data) = parse_gnq(data_buffer)?;
+            (remaining, Message::GNQ(data))
         }
         _ => unimplemented!(),
     };
@@ -437,6 +447,32 @@ mod talker_tests {
                 pos_mode: Fix::AutonomousGNSSFix,
                 nav_status: NavigationalStatus::NotValid,
             }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_glq() {
+        let input = "$UPGLQ,RMC*2F\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::MicroprocessorController,
+            message: Message::GLQ(GLQMessage { msg_id: "RMC" }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gnq() {
+        let input = "$UPGNQ,RMC*2D\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::MicroprocessorController,
+            message: Message::GNQ(GNQMessage { msg_id: "RMC" }),
         };
 
         let expected_output = Ok(("", expected_sentence));
