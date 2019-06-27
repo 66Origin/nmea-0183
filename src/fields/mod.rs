@@ -38,6 +38,17 @@ pub fn parse_float(input: &str) -> IResult<&str, Option<f64>> {
     }
 }
 
+pub fn parse_last_float(input: &str) -> IResult<&str, Option<f64>> {
+    if input.len() == 0 {
+        Ok(("", None))
+    } else if let Ok(raw) = input.parse::<f64>() {
+        // Presence of at least one more character has already been checked
+        Ok(("", Some(raw)))
+    // The field is not a valid float
+    } else {
+        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
+    }
+}
 pub fn parse_u8(input: &str) -> IResult<&str, Option<u8>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));

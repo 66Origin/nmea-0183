@@ -1,6 +1,4 @@
-use crate::fields::parse_float;
-use crate::fields::parse_string;
-use crate::fields::parse_u8;
+use crate::fields::*;
 use chrono::naive::NaiveTime;
 use nom::IResult;
 
@@ -30,6 +28,71 @@ pub enum Fix {
 pub enum Status {
     DataInvalid,
     DataValid,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum OperationMode {
+    Manual,
+    Automatic,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum NavigationMode {
+    FixNo,
+    Fix2D,
+    Fix3D,
+}
+
+pub fn parse_navigation_mode(input: &str) -> IResult<&str, NavigationMode> {
+    if input.len() < 2 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    if input.chars().nth(1) != Some(',') {
+        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
+    } else {
+        match input.chars().nth(0) {
+            // Index subscription is safe since input has at least 2 items
+            Some('1') => Ok((&input[2..], NavigationMode::FixNo)),
+            Some('2') => Ok((&input[2..], NavigationMode::Fix2D)),
+            Some('3') => Ok((&input[2..], NavigationMode::Fix3D)),
+            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
+        }
+    }
+}
+
+pub fn parse_satellite_ids(input: &str) -> IResult<&str, [Option<u8>; 12]> {
+    let mut remaining = input;
+    let mut ids = [None; 12];
+    for i in 0..12 {
+        let parsed = parse_satellite_id(remaining)?;
+        remaining = parsed.0;
+        ids[i] = parsed.1;
+    }
+
+    Ok((remaining, ids))
+}
+
+fn parse_satellite_id(input: &str) -> IResult<&str, Option<u8>> {
+    parse_u8(input).or_else(|err| match err {
+        nom::Err::Failure((input, nom::error::ErrorKind::Complete)) => Ok((input, None)),
+        _ => Err(err),
+    })
+}
+
+pub fn parse_operation_mode(input: &str) -> IResult<&str, OperationMode> {
+    if input.len() < 2 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    if input.chars().nth(1) != Some(',') {
+        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
+    } else {
+        match input.chars().nth(0) {
+            // Index subscription is safe since input has at least 2 items
+            Some('M') => Ok((&input[2..], OperationMode::Manual)),
+            Some('A') => Ok((&input[2..], OperationMode::Automatic)),
+            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
+        }
+    }
 }
 
 pub fn parse_status(input: &str) -> IResult<&str, Status> {
@@ -109,7 +172,7 @@ pub fn parse_degree(input: &str) -> IResult<&str, Option<Degree>> {
     let (remaining, maybe_float) = parse_float(input)?;
 
     let maybe_degree = if let Some(float) = maybe_float {
-        Some(Degree(float / 100.)) // 4717.11399 is actually 
+        Some(Degree(float / 100.)) // 4717.11399 is actually
     } else {
         None
     };
@@ -121,6 +184,20 @@ pub fn parse_meter(input: &str) -> IResult<&str, Option<Meter>> {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
     let (remaining, maybe_float) = parse_float(input)?;
+
+    let maybe_meter = if let Some(float) = maybe_float {
+        Some(Meter(float))
+    } else {
+        None
+    };
+    Ok((remaining, maybe_meter))
+}
+
+pub fn parse_last_meter(input: &str) -> IResult<&str, Option<Meter>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, maybe_float) = parse_last_float(input)?;
 
     let maybe_meter = if let Some(float) = maybe_float {
         Some(Meter(float))

@@ -2,12 +2,10 @@ use crate::fields::sentence_type::parse_sentence_type;
 use crate::fields::sentence_type::SentenceType;
 use crate::fields::talker::parse_talker;
 use crate::fields::talker::Talker;
-use crate::messages::dtm::parse_dtm;
-use crate::messages::dtm::DTMMessage;
-use crate::messages::gbq::parse_gbq;
-use crate::messages::gbq::GBQMessage;
-use crate::messages::gga::parse_gga;
-use crate::messages::gga::GGAMessage;
+use crate::messages::dtm::*;
+use crate::messages::gbq::*;
+use crate::messages::gga::*;
+use crate::messages::gsa::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -25,7 +23,7 @@ enum Message<'a> {
     GNS,
     GPQ,
     GRS,
-    GSA,
+    GSA(GSAMessage),
     GST,
     GSV,
     RMC,
@@ -109,6 +107,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
             let (remaining, data) = parse_gga(data_buffer)?;
             (remaining, Message::GGA(data))
         }
+        MessageType::GSA => {
+            let (remaining, data) = parse_gsa(data_buffer)?;
+            (remaining, Message::GSA(data))
+        }
         _ => unimplemented!(),
     };
 
@@ -169,10 +171,7 @@ fn sentence_is_valid(data: &str, checksum: u8) -> bool {
 mod talker_tests {
     use super::*;
     use crate::fields::cardinality::{EastWest, NorthSouth};
-    use crate::fields::units::Degree;
-    use crate::fields::units::Fix;
-    use crate::fields::units::Meter;
-    use crate::fields::units::Minute;
+    use crate::fields::units::*;
     use chrono::naive::NaiveTime;
 
     #[test]
@@ -198,7 +197,7 @@ mod talker_tests {
     }
 
     #[test]
-    fn test_parse_dtm2() {
+    fn test_parse_dtm_lat_lon_alt() {
         let input = "$GPDTM,999,,0.08,N,0.07,E,-47.7,W84*1B\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
@@ -273,6 +272,39 @@ mod talker_tests {
                 sep: Some(Meter(48.)),
                 diff_age: None,
                 diff_station: None,
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gsa() {
+        let input = "$GNGSA,A,3,80,71,73,79,69,,,,,,,,1.83,1.09,1.47*17\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPSGLONASS,
+            message: Message::GSA(GSAMessage {
+                op_mode: OperationMode::Automatic,
+                nav_mode: NavigationMode::Fix3D,
+                sattelite_ids: [
+                    Some(80),
+                    Some(71),
+                    Some(73),
+                    Some(79),
+                    Some(69),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ],
+                pdop: Some(Meter(1.83)),
+                hdop: Some(Meter(1.09)),
+                vdop: Some(Meter(1.47)),
             }),
         };
 
