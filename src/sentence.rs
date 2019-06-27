@@ -8,6 +8,7 @@ use crate::messages::gga::*;
 use crate::messages::gll::*;
 use crate::messages::gsa::*;
 use crate::messages::gsv::*;
+use crate::messages::rmc::*;
 use crate::messages::zda::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
@@ -29,7 +30,7 @@ enum Message<'a> {
     GSA(GSAMessage),
     GST,
     GSV(GSVMessage),
-    RMC,
+    RMC(RMCMessage),
     TXT,
     VLW,
     VTG,
@@ -126,6 +127,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
             let (remaining, data) = parse_zda(data_buffer)?;
             (remaining, Message::ZDA(data))
         }
+        MessageType::RMC => {
+            let (remaining, data) = parse_rmc(data_buffer)?;
+            (remaining, Message::RMC(data))
+        }
         _ => unimplemented!(),
     };
 
@@ -187,7 +192,7 @@ mod talker_tests {
     use super::*;
     use crate::fields::cardinality::{EastWest, NorthSouth};
     use crate::fields::units::*;
-    use chrono::naive::NaiveTime;
+    use chrono::naive::{NaiveDate, NaiveTime};
 
     #[test]
     fn test_parse_dtm_0_lat_lon_alt() {
@@ -391,7 +396,7 @@ mod talker_tests {
         assert_eq!(expected_output, parse_sentence(input));
     }
 
-        #[test]
+    #[test]
     fn test_parse_zda() {
         let input = "$GPZDA,082710.00,16,09,2002,00,00*64\r\n";
         let expected_sentence = Sentence {
@@ -404,6 +409,33 @@ mod talker_tests {
                 year: Some(2002),
                 ltzh: Some(0),
                 ltzn: Some(0),
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_rmc() {
+        let input = "$GPRMC,083559.00,A,4717.11437,N,00833.91522,E,0.004,77.52,091202,,,A,V*2D\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::RMC(RMCMessage {
+                time: NaiveTime::from_hms_opt(8, 35, 59),
+                status: Status::DataValid,
+                lat: Some(Degree(47.1711437)),
+                ns: NorthSouth::North,
+                lon: Some(Degree(8.3391522)),
+                ew: EastWest::East,
+                spd: Some(Knot(0.004)),
+                cog: Some(Degree(77.52)),
+                date: NaiveDate::from_ymd_opt(2002, 12, 09),
+                mv: None,
+                mv_ew: None,
+                pos_mode: Fix::AutonomousGNSSFix,
+                nav_status: NavigationalStatus::NotValid,
             }),
         };
 

@@ -1,5 +1,5 @@
 use crate::fields::*;
-use chrono::naive::NaiveTime;
+use chrono::naive::{NaiveDate, NaiveTime};
 use nom::sequence::tuple;
 use nom::IResult;
 
@@ -8,6 +8,9 @@ pub struct Minute(pub f64);
 
 #[derive(Debug, PartialEq)]
 pub struct Degree(pub f64);
+
+#[derive(Debug, PartialEq)]
+pub struct Knot(pub f64);
 
 #[derive(Debug, PartialEq)]
 pub struct Meter(pub f64);
@@ -45,11 +48,36 @@ pub enum NavigationMode {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum NavigationalStatus {
+    Safe,
+    Caution,
+    Unsafe,
+    NotValid,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct SatelliteInView {
     pub id: Option<u8>,
     pub elv: Option<u8>,
     pub az: Option<u16>,
     pub cno: Option<u8>,
+}
+
+pub fn parse_navigational_status(input: &str) -> IResult<&str, NavigationalStatus> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('S') => (&input[1..], NavigationalStatus::Safe),
+        Some('C') => (&input[1..], NavigationalStatus::Caution),
+        Some('U') => (&input[1..], NavigationalStatus::Unsafe),
+        Some('V') => (&input[1..], NavigationalStatus::NotValid),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_satellites_in_view(input: &str) -> IResult<&str, Vec<SatelliteInView>> {
@@ -69,20 +97,19 @@ fn parse_satellite_in_view(input: &str) -> IResult<&str, SatelliteInView> {
 }
 
 pub fn parse_navigation_mode(input: &str) -> IResult<&str, NavigationMode> {
-    if input.len() < 2 {
+    if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    if input.chars().nth(1) != Some(',') {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    } else {
-        match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 2 items
-            Some('1') => Ok((&input[2..], NavigationMode::FixNo)),
-            Some('2') => Ok((&input[2..], NavigationMode::Fix2D)),
-            Some('3') => Ok((&input[2..], NavigationMode::Fix3D)),
-            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('1') => (&input[1..], NavigationMode::FixNo),
+        Some('2') => (&input[1..], NavigationMode::Fix2D),
+        Some('3') => (&input[1..], NavigationMode::Fix3D),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
         }
-    }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_satellite_ids(input: &str) -> IResult<&str, [Option<u8>; 12]> {
@@ -190,6 +217,34 @@ pub fn parse_minute(input: &str) -> IResult<&str, Option<Minute>> {
     Ok((remaining, maybe_minute))
 }
 
+pub fn parse_knot(input: &str) -> IResult<&str, Option<Knot>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, maybe_float) = parse_float(input)?;
+
+    let maybe_knot = if let Some(float) = maybe_float {
+        Some(Knot(float))
+    } else {
+        None
+    };
+    Ok((remaining, maybe_knot))
+}
+
+pub fn parse_raw_degree(input: &str) -> IResult<&str, Option<Degree>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, maybe_float) = parse_float(input)?;
+
+    let maybe_degree = if let Some(float) = maybe_float {
+        Some(Degree(float))
+    } else {
+        None
+    };
+    Ok((remaining, maybe_degree))
+}
+
 pub fn parse_degree(input: &str) -> IResult<&str, Option<Degree>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
@@ -283,6 +338,27 @@ pub fn parse_signal(input: &str) -> IResult<&str, u8> {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
     Ok((input, 0))
+}
+
+// ddmmyy arbitrary parsing it as if we always were in the 21st centuary
+pub fn parse_date(input: &str) -> IResult<&str, Option<NaiveDate>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, date_str) = parse_string(input)?;
+    let maybe_date = if let Ok(raw_ymd) = str::parse::<u32>(date_str) {
+        let day = raw_ymd / 10_000;
+        let month = (raw_ymd - day * 10_000) / 100;
+        let year = raw_ymd - day * 10_000 - month * 100;
+        if year > 99 {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::TooLarge)));
+        }
+        NaiveDate::from_ymd_opt(year as i32 + 2000, month, day)
+    } else {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Digit)));
+    };
+
+    Ok((remaining, maybe_date))
 }
 
 // 235503.00
