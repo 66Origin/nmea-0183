@@ -10,62 +10,98 @@ pub fn parse_string(input: &str) -> IResult<&str, &str> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    let (with_separator, parse_string) = take_until(",")(input)?;
-    // Presence of at least one more character has already been checked
-    Ok((&with_separator[1..], parse_string))
-}
 
-pub fn parse_last_string(input: &str) -> IResult<&str, &str> {
-    Ok(("", input))
+    // Explicit anotation is required here
+    let res: Result<(&str, &str), nom::Err<(_, nom::error::ErrorKind)>> = take_until(",")(input);
+    let (remaining, result) = match res {
+        Ok(res) => res,
+        _ => ("", input),
+    };
+
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_float(input: &str) -> IResult<&str, Option<f64>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    let (remaining, field) = take_until(",")(input)?;
+
+    // Explicit anotation is required here
+    let res: Result<(&str, &str), nom::Err<(_, nom::error::ErrorKind)>> = take_until(",")(input);
+    let (remaining, field) = match res {
+        Ok(res) => res,
+        _ => ("", input),
+    };
     // The field is valid, but there is no value
-    if field.len() == 0 {
+    let result = if field.len() == 0 {
         // Presence of at least one more character has already been checked
-        Ok((&remaining[1..], None))
+        None
     // The field is a valid float
     } else if let Ok(raw) = field.parse::<f64>() {
         // Presence of at least one more character has already been checked
-        Ok((&remaining[1..], Some(raw)))
+        Some(raw)
     // The field is not a valid float
     } else {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+    };
+
+    remove_separator_if_next(',', remaining, result)
+}
+
+fn remove_separator_if_next<T>(separator: char, input: &str, result: T) -> IResult<&str, T> {
+    if let Some(c) = input.chars().nth(0) {
+        if c == separator {
+            Ok((&input[1..], result))
+        } else {
+            Ok((input, result))
+        }
+    } else {
+        Ok((input, result))
     }
 }
 
-pub fn parse_last_float(input: &str) -> IResult<&str, Option<f64>> {
-    if input.len() == 0 {
-        Ok(("", None))
-    } else if let Ok(raw) = input.parse::<f64>() {
-        // Presence of at least one more character has already been checked
-        Ok(("", Some(raw)))
+pub fn parse_u8(input: &str) -> IResult<&str, Option<u8>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    // Explicit anotation is required here
+    let res: Result<(&str, &str), nom::Err<(_, nom::error::ErrorKind)>> = take_until(",")(input);
+    let (remaining, field) = match res {
+        Ok(res) => res,
+        _ => ("", input),
+    };
+    // The field is valid, but there is no value
+    let result = if field.len() == 0 {
+        None
+    // The field is a valid float
+    } else if let Ok(raw) = field.parse::<u8>() {
+        Some(raw)
     // The field is not a valid float
     } else {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    }
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+    };
+
+    remove_separator_if_next(',', remaining, result)
 }
-pub fn parse_u8(input: &str) -> IResult<&str, Option<u8>> {
+
+pub fn parse_u16(input: &str) -> IResult<&str, Option<u16>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
     let (remaining, field) = take_until(",")(input)?;
     // The field is valid, but there is no value
-    if field.len() == 0 {
-        // Presence of at least one more character has already been checked
-        Ok((&remaining[1..], None))
+    let result = if field.len() == 0 {
+        None
     // The field is a valid float
-    } else if let Ok(raw) = field.parse::<u8>() {
+    } else if let Ok(raw) = field.parse::<u16>() {
         // Presence of at least one more character has already been checked
-        Ok((&remaining[1..], Some(raw)))
-    // The field is not a valid float
+        Some(raw)
+    // The field is not a valid u16
     } else {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    }
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+    };
+
+    remove_separator_if_next(',', remaining, result)
 }
 
 #[cfg(test)]
@@ -126,14 +162,13 @@ mod tests {
     fn test_parse_last_string() {
         let input = "foo_bar*";
         let expected = Ok(("", "foo_bar*"));
-        assert_eq!(expected, parse_last_string(input));
+        assert_eq!(expected, parse_string(input));
     }
 
     #[test]
     fn test_parse_empty_last_string() {
         let input = "";
-        let expected = Ok(("", ""));
-        assert_eq!(expected, parse_last_string(input));
+        assert!(parse_string(input).is_err());
     }
 
     #[test]
@@ -148,6 +183,6 @@ mod tests {
         assert_eq!(expected_two, parse_string(expected_one.unwrap().0));
         assert_eq!(expected_three, parse_string(expected_two.unwrap().0));
         assert_eq!(expected_four, parse_string(expected_three.unwrap().0));
-        assert_eq!(expected_five, parse_last_string(expected_four.unwrap().0));
+        assert_eq!(expected_five, parse_string(expected_four.unwrap().0));
     }
 }

@@ -1,6 +1,5 @@
 use crate::fields::cardinality::EastWest;
 use crate::fields::cardinality::NorthSouth;
-use crate::fields::parse_last_string;
 use crate::fields::parse_string;
 use crate::fields::units::parse_meter;
 use crate::fields::units::parse_minute;
@@ -33,7 +32,7 @@ pub fn parse_dtm(input: &str) -> IResult<&str, DTMMessage> {
         parse_minute,
         parse_east_west_indicator,
         parse_meter,
-        parse_last_string,
+        parse_string,
     ))(input)?;
     Ok((
         remaining,

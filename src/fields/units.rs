@@ -1,5 +1,6 @@
 use crate::fields::*;
 use chrono::naive::NaiveTime;
+use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
@@ -41,6 +42,30 @@ pub enum NavigationMode {
     FixNo,
     Fix2D,
     Fix3D,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SatelliteInView {
+    pub id: Option<u8>,
+    pub elv: Option<u8>,
+    pub az: Option<u16>,
+    pub cno: Option<u8>,
+}
+
+pub fn parse_satellites_in_view(input: &str) -> IResult<&str, Vec<SatelliteInView>> {
+    let mut remaining = input;
+    let mut satellites = Vec::new();
+    while remaining.len() != 0 {
+        let sv = parse_satellite_in_view(remaining)?;
+        remaining = sv.0;
+        satellites.push(sv.1);
+    }
+    Ok((remaining, satellites))
+}
+
+fn parse_satellite_in_view(input: &str) -> IResult<&str, SatelliteInView> {
+    let (remaining, (id, elv, az, cno)) = tuple((parse_u8, parse_u8, parse_u16, parse_u8))(input)?;
+    Ok((remaining, SatelliteInView { id, elv, az, cno }))
 }
 
 pub fn parse_navigation_mode(input: &str) -> IResult<&str, NavigationMode> {
@@ -197,7 +222,7 @@ pub fn parse_last_meter(input: &str) -> IResult<&str, Option<Meter>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    let (remaining, maybe_float) = parse_last_float(input)?;
+    let (remaining, maybe_float) = parse_float(input)?;
 
     let maybe_meter = if let Some(float) = maybe_float {
         Some(Meter(float))

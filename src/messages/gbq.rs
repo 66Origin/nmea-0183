@@ -1,4 +1,4 @@
-use crate::fields::parse_last_string;
+use crate::fields::parse_string;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
@@ -7,7 +7,7 @@ pub struct GBQMessage<'a> {
 }
 
 pub fn parse_gbq(input: &str) -> IResult<&str, GBQMessage> {
-    let (remaining, msg_id) = parse_last_string(input)?;
+    let (remaining, msg_id) = parse_string(input)?;
     Ok((remaining, GBQMessage { msg_id }))
 }
 

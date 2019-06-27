@@ -6,6 +6,7 @@ use crate::messages::dtm::*;
 use crate::messages::gbq::*;
 use crate::messages::gga::*;
 use crate::messages::gsa::*;
+use crate::messages::gsv::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -25,7 +26,7 @@ enum Message<'a> {
     GRS,
     GSA(GSAMessage),
     GST,
-    GSV,
+    GSV(GSVMessage),
     RMC,
     TXT,
     VLW,
@@ -110,6 +111,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GSA => {
             let (remaining, data) = parse_gsa(data_buffer)?;
             (remaining, Message::GSA(data))
+        }
+        MessageType::GSV => {
+            let (remaining, data) = parse_gsv(data_buffer)?;
+            (remaining, Message::GSV(data))
         }
         _ => unimplemented!(),
     };
@@ -305,6 +310,49 @@ mod talker_tests {
                 pdop: Some(Meter(1.83)),
                 hdop: Some(Meter(1.09)),
                 vdop: Some(Meter(1.47)),
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gsv() {
+        let input = "$GPGSV,3,1,11,03,03,111,00,04,15,270,00,06,01,010,00,13,06,292,00*74\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::GSV(GSVMessage {
+                total_msgs: 3,
+                msg_num: 1,
+                satellite_num: 11,
+                satellites: vec![
+                    SatelliteInView {
+                        id: Some(3),
+                        elv: Some(3),
+                        az: Some(111),
+                        cno: Some(0),
+                    },
+                    SatelliteInView {
+                        id: Some(4),
+                        elv: Some(15),
+                        az: Some(270),
+                        cno: Some(0),
+                    },
+                    SatelliteInView {
+                        id: Some(6),
+                        elv: Some(1),
+                        az: Some(10),
+                        cno: Some(0),
+                    },
+                    SatelliteInView {
+                        id: Some(13),
+                        elv: Some(6),
+                        az: Some(292),
+                        cno: Some(0),
+                    },
+                ],
             }),
         };
 
