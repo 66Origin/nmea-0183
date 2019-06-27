@@ -137,43 +137,39 @@ pub fn parse_status(input: &str) -> IResult<&str, Status> {
 }
 
 pub fn parse_quality(input: &str) -> IResult<&str, Fix> {
-    if input.len() < 2 {
+    if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    if input.chars().nth(1) != Some(',') {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    } else {
-        match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 2 items
-            Some('0') => Ok((&input[2..], Fix::NoFix)),
-            Some('1') => Ok((&input[2..], Fix::AutonomousGNSSFix)),
-            Some('2') => Ok((&input[2..], Fix::DifferentialGNSSFix)),
-            Some('4') => Ok((&input[2..], Fix::RTKFixed)),
-            Some('5') => Ok((&input[2..], Fix::RTKFloat)),
-            Some('6') => Ok((&input[2..], Fix::EstimatedOrDeadReckoningFix)),
-            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
-        }
-    }
+
+        let (remaining, result) = match input.chars().nth(0) {
+            // Index subscription is safe since input has at least 1 item
+            Some('0') => (&input[2..], Fix::NoFix),
+            Some('1') => (&input[2..], Fix::AutonomousGNSSFix),
+            Some('2') => (&input[2..], Fix::DifferentialGNSSFix),
+            Some('4') => (&input[2..], Fix::RTKFixed),
+            Some('5') => (&input[2..], Fix::RTKFloat),
+            Some('6') => (&input[2..], Fix::EstimatedOrDeadReckoningFix),
+            _ => { return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));},
+        };
+
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_pos_mode(input: &str) -> IResult<&str, Fix> {
-    if input.len() < 2 {
+    if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    if input.chars().nth(1) != Some(',') {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    } else {
-        match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 2 items
-            Some('N') => Ok((&input[2..], Fix::NoFix)),
-            Some('A') => Ok((&input[2..], Fix::AutonomousGNSSFix)),
-            Some('D') => Ok((&input[2..], Fix::DifferentialGNSSFix)),
-            Some('R') => Ok((&input[2..], Fix::RTKFixed)),
-            Some('F') => Ok((&input[2..], Fix::RTKFloat)),
-            Some('E') => Ok((&input[2..], Fix::EstimatedOrDeadReckoningFix)),
-            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
-        }
-    }
+    let (remaining, result) = match input.chars().nth(0) {
+            // Index subscription is safe since input has at least 1 item
+            Some('N') => (&input[1..], Fix::NoFix),
+            Some('A') => (&input[1..], Fix::AutonomousGNSSFix),
+            Some('D') => (&input[1..], Fix::DifferentialGNSSFix),
+            Some('R') => (&input[1..], Fix::RTKFixed),
+            Some('F') => (&input[1..], Fix::RTKFloat),
+            Some('E') => (&input[1..], Fix::EstimatedOrDeadReckoningFix),
+            _ => {return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));},
+        };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_minute(input: &str) -> IResult<&str, Option<Minute>> {
@@ -197,7 +193,7 @@ pub fn parse_degree(input: &str) -> IResult<&str, Option<Degree>> {
     let (remaining, maybe_float) = parse_float(input)?;
 
     let maybe_degree = if let Some(float) = maybe_float {
-        Some(Degree(float / 100.)) // 4717.11399 is actually
+        Some(Degree(float / 100.)) // 4717.11399 is actually 47.1711399
     } else {
         None
     };

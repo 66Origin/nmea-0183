@@ -48,7 +48,7 @@ pub fn parse_float(input: &str) -> IResult<&str, Option<f64>> {
     remove_separator_if_next(',', remaining, result)
 }
 
-fn remove_separator_if_next<T>(separator: char, input: &str, result: T) -> IResult<&str, T> {
+pub fn remove_separator_if_next<T>(separator: char, input: &str, result: T) -> IResult<&str, T> {
     if let Some(c) = input.chars().nth(0) {
         if c == separator {
             Ok((&input[1..], result))

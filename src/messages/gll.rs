@@ -1,5 +1,4 @@
 use crate::fields::cardinality::*;
-use crate::fields::parse_u8;
 use crate::fields::units::*;
 use chrono::naive::NaiveTime;
 use nom::sequence::tuple;
@@ -7,27 +6,37 @@ use nom::IResult;
 
 #[derive(Debug, PartialEq)]
 pub struct GLLMessage {
-    pub total_msgs: u8,
-    pub msg_num: u8,
-    pub satellite_num: u8,
-    pub satellites: Vec<SatelliteInView>,
+    pub lat: Option<Degree>,
+    pub ns: NorthSouth,
+    pub lon: Option<Degree>,
+    pub ew: EastWest,
+    pub time: Option<NaiveTime>,
+    pub status: Status,
+    pub pos_mode: Fix,
 }
 
 pub fn parse_gll(input: &str) -> IResult<&str, GLLMessage> {
-    let (remaining, (maybe_total_msgs, maybe_msg_num, maybe_satellite_num, satellites)) =
-        tuple((parse_u8, parse_u8, parse_u8, parse_satellites_in_view))(input)?;
-    match (maybe_total_msgs, maybe_msg_num, maybe_satellite_num) {
-        (Some(total_msgs), Some(msg_num), Some(satellite_num)) => Ok((
-            remaining,
-            GLLMessage {
-                total_msgs,
-                msg_num,
-                satellite_num,
-                satellites,
-            },
-        )),
-        _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::Not))),
-    }
+    let (remaining, (lat, ns, lon, ew, time, status, pos_mode)) = tuple((
+        parse_degree,
+        parse_north_south_indicator,
+        parse_degree,
+        parse_east_west_indicator,
+        parse_time,
+        parse_status,
+        parse_pos_mode,
+    ))(input)?;
+    Ok((
+        remaining,
+        GLLMessage {
+            lat,
+            ns,
+            lon,
+            ew,
+            time,
+            status,
+            pos_mode,
+        },
+    ))
 }
 
 #[cfg(test)]
@@ -36,39 +45,17 @@ mod tests {
 
     #[test]
     fn test_parse_gll() {
-        let input = "3,1,11,03,03,111,00,04,15,270,00,06,01,010,00,13,06,292,00";
+        let input = "4717.11364,N,00833.91565,E,092321.00,A,A";
         let expected = Ok((
             "",
             GLLMessage {
-                total_msgs: 3,
-                msg_num: 1,
-                satellite_num: 11,
-                satellites: vec![
-                    SatelliteInView {
-                        id: Some(3),
-                        elv: Some(3),
-                        az: Some(111),
-                        cno: Some(0),
-                    },
-                    SatelliteInView {
-                        id: Some(4),
-                        elv: Some(15),
-                        az: Some(270),
-                        cno: Some(0),
-                    },
-                    SatelliteInView {
-                        id: Some(6),
-                        elv: Some(1),
-                        az: Some(10),
-                        cno: Some(0),
-                    },
-                    SatelliteInView {
-                        id: Some(13),
-                        elv: Some(6),
-                        az: Some(292),
-                        cno: Some(0),
-                    },
-                ],
+                lat: Some(Degree(47.171136399999995)), // floats ¯\_(ツ)_/¯
+                ns: NorthSouth::North,
+                lon: Some(Degree(8.3391565)),
+                ew: EastWest::East,
+                time: Some(NaiveTime::from_hms(9, 23, 21)),
+                status: Status::DataValid,
+                pos_mode: Fix::AutonomousGNSSFix,
             },
         ));
 

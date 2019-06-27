@@ -7,6 +7,7 @@ use crate::messages::gbq::*;
 use crate::messages::gga::*;
 use crate::messages::gsa::*;
 use crate::messages::gsv::*;
+use crate::messages::gll::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -18,7 +19,7 @@ enum Message<'a> {
     GBQ(GBQMessage<'a>),
     GBS,
     GGA(GGAMessage),
-    GLL,
+    GLL(GLLMessage),
     GLQ,
     GNQ,
     GNS,
@@ -115,6 +116,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GSV => {
             let (remaining, data) = parse_gsv(data_buffer)?;
             (remaining, Message::GSV(data))
+        }
+        MessageType::GLL => {
+            let (remaining, data) = parse_gll(data_buffer)?;
+            (remaining, Message::GLL(data))
         }
         _ => unimplemented!(),
     };
@@ -353,6 +358,27 @@ mod talker_tests {
                         cno: Some(0),
                     },
                 ],
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+        #[test]
+    fn test_parse_gll() {
+        let input = "$GPGLL,4717.11364,N,00833.91565,E,092321.00,A,A*60\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::GLL(            GLLMessage {
+                lat: Some(Degree(47.171136399999995)), // floats ¯\_(ツ)_/¯
+                ns: NorthSouth::North,
+                lon: Some(Degree(8.3391565)),
+                ew: EastWest::East,
+                time: Some(NaiveTime::from_hms(9, 23, 21)),
+                status: Status::DataValid,
+                pos_mode: Fix::AutonomousGNSSFix,
             }),
         };
 
