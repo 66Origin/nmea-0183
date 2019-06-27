@@ -5,9 +5,10 @@ use crate::fields::talker::Talker;
 use crate::messages::dtm::*;
 use crate::messages::gbq::*;
 use crate::messages::gga::*;
+use crate::messages::gll::*;
 use crate::messages::gsa::*;
 use crate::messages::gsv::*;
-use crate::messages::gll::*;
+use crate::messages::zda::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -32,7 +33,7 @@ enum Message<'a> {
     TXT,
     VLW,
     VTG,
-    ZDA,
+    ZDA(ZDAMessage),
 }
 
 #[derive(Debug, PartialEq)]
@@ -120,6 +121,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GLL => {
             let (remaining, data) = parse_gll(data_buffer)?;
             (remaining, Message::GLL(data))
+        }
+        MessageType::ZDA => {
+            let (remaining, data) = parse_zda(data_buffer)?;
+            (remaining, Message::ZDA(data))
         }
         _ => unimplemented!(),
     };
@@ -365,13 +370,13 @@ mod talker_tests {
         assert_eq!(expected_output, parse_sentence(input));
     }
 
-        #[test]
+    #[test]
     fn test_parse_gll() {
         let input = "$GPGLL,4717.11364,N,00833.91565,E,092321.00,A,A*60\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPS,
-            message: Message::GLL(            GLLMessage {
+            message: Message::GLL(GLLMessage {
                 lat: Some(Degree(47.171136399999995)), // floats ¯\_(ツ)_/¯
                 ns: NorthSouth::North,
                 lon: Some(Degree(8.3391565)),
@@ -379,6 +384,26 @@ mod talker_tests {
                 time: Some(NaiveTime::from_hms(9, 23, 21)),
                 status: Status::DataValid,
                 pos_mode: Fix::AutonomousGNSSFix,
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+        #[test]
+    fn test_parse_zda() {
+        let input = "$GPZDA,082710.00,16,09,2002,00,00*64\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::ZDA(ZDAMessage {
+                time: Some(NaiveTime::from_hms(8, 27, 10)),
+                day: Some(16),
+                month: Some(09),
+                year: Some(2002),
+                ltzh: Some(0),
+                ltzn: Some(0),
             }),
         };
 

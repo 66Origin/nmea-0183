@@ -141,16 +141,18 @@ pub fn parse_quality(input: &str) -> IResult<&str, Fix> {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
 
-        let (remaining, result) = match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 1 item
-            Some('0') => (&input[2..], Fix::NoFix),
-            Some('1') => (&input[2..], Fix::AutonomousGNSSFix),
-            Some('2') => (&input[2..], Fix::DifferentialGNSSFix),
-            Some('4') => (&input[2..], Fix::RTKFixed),
-            Some('5') => (&input[2..], Fix::RTKFloat),
-            Some('6') => (&input[2..], Fix::EstimatedOrDeadReckoningFix),
-            _ => { return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));},
-        };
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 item
+        Some('0') => (&input[2..], Fix::NoFix),
+        Some('1') => (&input[2..], Fix::AutonomousGNSSFix),
+        Some('2') => (&input[2..], Fix::DifferentialGNSSFix),
+        Some('4') => (&input[2..], Fix::RTKFixed),
+        Some('5') => (&input[2..], Fix::RTKFloat),
+        Some('6') => (&input[2..], Fix::EstimatedOrDeadReckoningFix),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
 
     remove_separator_if_next(',', remaining, result)
 }
@@ -160,15 +162,17 @@ pub fn parse_pos_mode(input: &str) -> IResult<&str, Fix> {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
     let (remaining, result) = match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 1 item
-            Some('N') => (&input[1..], Fix::NoFix),
-            Some('A') => (&input[1..], Fix::AutonomousGNSSFix),
-            Some('D') => (&input[1..], Fix::DifferentialGNSSFix),
-            Some('R') => (&input[1..], Fix::RTKFixed),
-            Some('F') => (&input[1..], Fix::RTKFloat),
-            Some('E') => (&input[1..], Fix::EstimatedOrDeadReckoningFix),
-            _ => {return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));},
-        };
+        // Index subscription is safe since input has at least 1 item
+        Some('N') => (&input[1..], Fix::NoFix),
+        Some('A') => (&input[1..], Fix::AutonomousGNSSFix),
+        Some('D') => (&input[1..], Fix::DifferentialGNSSFix),
+        Some('R') => (&input[1..], Fix::RTKFixed),
+        Some('F') => (&input[1..], Fix::RTKFloat),
+        Some('E') => (&input[1..], Fix::EstimatedOrDeadReckoningFix),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
     remove_separator_if_next(',', remaining, result)
 }
 
