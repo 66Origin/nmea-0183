@@ -9,12 +9,13 @@ use crate::messages::gga::*;
 use crate::messages::gll::*;
 use crate::messages::glq::*;
 use crate::messages::gnq::*;
+use crate::messages::gns::*;
+use crate::messages::gpq::*;
 use crate::messages::gsa::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::zda::*;
-use crate::messages::gns::*;
-use crate::messages::gpq::*;
+use crate::messages::grs::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -31,7 +32,7 @@ enum Message<'a> {
     GNQ(GNQMessage<'a>),
     GNS(GNSMessage),
     GPQ(GPQMessage<'a>),
-    GRS,
+    GRS(GRSMessage),
     GSA(GSAMessage),
     GST,
     GSV(GSVMessage),
@@ -155,6 +156,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GPQ => {
             let (remaining, data) = parse_gpq(data_buffer)?;
             (remaining, Message::GPQ(data))
+        }
+        MessageType::GRS => {
+            let (remaining, data) = parse_grs(data_buffer)?;
+            (remaining, Message::GRS(data))
         }
         _ => unimplemented!(),
     };
@@ -533,7 +538,8 @@ mod talker_tests {
 
     #[test]
     fn test_parse_gns() {
-        let input = "$GNGNS,103600.01,5114.51176,N,00012.29380,W,ANNN,07,1.18,111.5,45.6,,,V*00\r\n";
+        let input =
+            "$GNGNS,103600.01,5114.51176,N,00012.29380,W,ANNN,07,1.18,111.5,45.6,,,V*00\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPSGLONASS,
@@ -551,6 +557,39 @@ mod talker_tests {
                 diff_age: None,
                 diff_station: None,
                 nav_status: Status::DataInvalid,
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_grs() {
+        let input =
+            "$GNGRS,104148.00,1,2.6,2.2,-1.6,-1.1,-1.7,-1.5,5.8,1.7,,,,,1,1*52\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPSGLONASS,
+            message: Message::GRS(GRSMessage {
+                time: Some(NaiveTime::from_hms(10, 41, 48)),
+                mode: Some(ComputationMethod::AfterGGA),
+                residuals: [
+                    Some(Meter(2.6)),
+                    Some(Meter(2.2)),
+                    Some(Meter(-1.6)),
+                    Some(Meter(-1.1)),
+                    Some(Meter(-1.7)),
+                    Some(Meter(-1.5)),
+                    Some(Meter(5.8)),
+                    Some(Meter(1.7)),
+                    None,
+                    None,
+                    None,
+                    None,
+                ],
+                system_id: Some(1),
+                signal_id: Some(1),
             }),
         };
 

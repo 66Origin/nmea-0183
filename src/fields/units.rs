@@ -12,7 +12,7 @@ pub struct Degree(pub f64);
 #[derive(Debug, PartialEq)]
 pub struct Knot(pub f64);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Meter(pub f64);
 
 #[derive(Debug, PartialEq)]
@@ -41,6 +41,12 @@ pub enum OperationMode {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum ComputationMethod {
+    InGGA,
+    AfterGGA,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum NavigationMode {
     FixNo,
     Fix2D,
@@ -61,6 +67,34 @@ pub struct SatelliteInView {
     pub elv: Option<u8>,
     pub az: Option<u16>,
     pub cno: Option<u8>,
+}
+
+pub fn parse_residuals(input: &str) -> IResult<&str, [Option<Meter>; 12]> {
+    let mut remaining = input;
+    let mut residuals = [None; 12];
+    for i in 0..12 {
+        let parsed = parse_meter(remaining)?;
+        remaining = parsed.0;
+        residuals[i] = parsed.1;
+    }
+
+    Ok((remaining, residuals))
+}
+
+pub fn parse_computation_method(input: &str) -> IResult<&str, Option<ComputationMethod>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('0') => (&input[1..], Some(ComputationMethod::InGGA)),
+        Some('1') => (&input[1..], Some(ComputationMethod::AfterGGA)),
+        Some(',') => (&input[1..], None),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_navigational_status(input: &str) -> IResult<&str, NavigationalStatus> {
@@ -339,18 +373,18 @@ pub fn parse_dilution_of_precision(input: &str) -> IResult<&str, Option<f64>> {
     parse_float(input)
 }
 
-pub fn parse_system(input: &str) -> IResult<&str, u8> {
+pub fn parse_system(input: &str) -> IResult<&str, Option<u8>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    Ok((input, 0))
+    parse_u8(input)
 }
 
-pub fn parse_signal(input: &str) -> IResult<&str, u8> {
+pub fn parse_signal(input: &str) -> IResult<&str, Option<u8>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    Ok((input, 0))
+    parse_u8(input)
 }
 
 // ddmmyy arbitrary parsing it as if we always were in the 21st centuary
