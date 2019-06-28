@@ -16,6 +16,7 @@ use crate::messages::gsa::*;
 use crate::messages::gst::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
+use crate::messages::txt::*;
 use crate::messages::zda::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
@@ -38,7 +39,7 @@ enum Message<'a> {
     GST(GSTMessage),
     GSV(GSVMessage),
     RMC(RMCMessage),
-    TXT,
+    TXT(TXTMessage<'a>),
     VLW,
     VTG,
     ZDA(ZDAMessage),
@@ -165,6 +166,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GST => {
             let (remaining, data) = parse_gst(data_buffer)?;
             (remaining, Message::GST(data))
+        }
+        MessageType::TXT => {
+            let (remaining, data) = parse_txt(data_buffer)?;
+            (remaining, Message::TXT(data))
         }
         _ => unimplemented!(),
     };
@@ -616,6 +621,24 @@ mod talker_tests {
                 std_lat: Some(Meter(1.7)),
                 std_lon: Some(Meter(1.3)),
                 std_alt: Some(Meter(2.2)),
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_txt() {
+        let input = "$GPTXT,01,01,02,ANTARIS ATR0620 HW 00000040*67\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::TXT(TXTMessage {
+                num_msg: Some(01),
+                msg_num: Some(01),
+                msg_type: crate::fields::units::MessageType::Notice,
+                text: "ANTARIS ATR0620 HW 00000040",
             }),
         };
 

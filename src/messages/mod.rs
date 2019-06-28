@@ -12,4 +12,5 @@ pub mod gsa;
 pub mod gst;
 pub mod gsv;
 pub mod rmc;
+pub mod txt;
 pub mod zda;

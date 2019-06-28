@@ -2,6 +2,7 @@ use crate::fields::*;
 use chrono::naive::{NaiveDate, NaiveTime};
 use nom::sequence::tuple;
 use nom::IResult;
+use nom::InputTake;
 
 #[derive(Debug, PartialEq)]
 pub struct Minute(pub f64);
@@ -67,6 +68,29 @@ pub struct SatelliteInView {
     pub elv: Option<u8>,
     pub az: Option<u16>,
     pub cno: Option<u8>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum MessageType {
+    Error,
+    Warning,
+    Notice,
+    User,
+}
+
+pub fn parse_message_type(input: &str) -> IResult<&str, MessageType> {
+    let (remaining, type_str) = take_until(",")(input)?;
+    let result = match type_str {
+        "00" => MessageType::Error,
+        "01" => MessageType::Warning,
+        "02" => MessageType::Notice,
+        "07" => MessageType::User,
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    // Index subscription is safe since input has at least the comma
+    Ok((&remaining[1..], result))
 }
 
 pub fn parse_residuals(input: &str) -> IResult<&str, [Option<Meter>; 12]> {
