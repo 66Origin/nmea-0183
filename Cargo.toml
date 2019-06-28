@@ -1,6 +1,6 @@
 [package]
 name = "nmea-0183"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["o0Ignition0o <jeremy.lempereur@gmail.com>"]
 edition = "2018"
 
