@@ -11,11 +11,12 @@ use crate::messages::glq::*;
 use crate::messages::gnq::*;
 use crate::messages::gns::*;
 use crate::messages::gpq::*;
+use crate::messages::grs::*;
 use crate::messages::gsa::*;
+use crate::messages::gst::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::zda::*;
-use crate::messages::grs::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -34,7 +35,7 @@ enum Message<'a> {
     GPQ(GPQMessage<'a>),
     GRS(GRSMessage),
     GSA(GSAMessage),
-    GST,
+    GST(GSTMessage),
     GSV(GSVMessage),
     RMC(RMCMessage),
     TXT,
@@ -160,6 +161,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GRS => {
             let (remaining, data) = parse_grs(data_buffer)?;
             (remaining, Message::GRS(data))
+        }
+        MessageType::GST => {
+            let (remaining, data) = parse_gst(data_buffer)?;
+            (remaining, Message::GST(data))
         }
         _ => unimplemented!(),
     };
@@ -566,8 +571,7 @@ mod talker_tests {
 
     #[test]
     fn test_parse_grs() {
-        let input =
-            "$GNGRS,104148.00,1,2.6,2.2,-1.6,-1.1,-1.7,-1.5,5.8,1.7,,,,,1,1*52\r\n";
+        let input = "$GNGRS,104148.00,1,2.6,2.2,-1.6,-1.1,-1.7,-1.5,5.8,1.7,,,,,1,1*52\r\n";
         let expected_sentence = Sentence {
             sentence_type: SentenceType::Parametric,
             talker: Talker::GPSGLONASS,
@@ -590,6 +594,28 @@ mod talker_tests {
                 ],
                 system_id: Some(1),
                 signal_id: Some(1),
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gst() {
+        let input = "$GPGST,082356.00,1.8,,,,1.7,1.3,2.2*7E\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::GST(GSTMessage {
+                time: Some(NaiveTime::from_hms(08, 23, 56)),
+                range_rms: Some(Meter(1.8)),
+                std_major: None,
+                std_minor: None,
+                orient: None,
+                std_lat: Some(Meter(1.7)),
+                std_lon: Some(Meter(1.3)),
+                std_alt: Some(Meter(2.2)),
             }),
         };
 
