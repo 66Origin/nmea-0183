@@ -5,7 +5,7 @@ A nmea-0183 sentence parser written in Rust using Nom.
   <a href="https://crates.io/crates/nmea-0183">
       <img src="https://meritbadge.herokuapp.com/nmea-0183" alt="crates.io/nmea-0183">
   </a>
-  <a href="https://travis-ci.org/YellowInnovation/nmea-0183">
+  <a href="https://travis-ci.com/YellowInnovation/nmea-0183">
       <img src="https://img.shields.io/travis/YellowInnovation/nmea-0183/master.svg" alt="Travis Build Status">
   </a>
   <a href="https://docs.rs/nmea-0183">
