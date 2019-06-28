@@ -17,6 +17,7 @@ use crate::messages::gst::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::txt::*;
+use crate::messages::vlw::*;
 use crate::messages::zda::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
@@ -40,7 +41,7 @@ enum Message<'a> {
     GSV(GSVMessage),
     RMC(RMCMessage),
     TXT(TXTMessage<'a>),
-    VLW,
+    VLW(VLWMessage),
     VTG,
     ZDA(ZDAMessage),
 }
@@ -170,6 +171,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::TXT => {
             let (remaining, data) = parse_txt(data_buffer)?;
             (remaining, Message::TXT(data))
+        }
+        MessageType::VLW => {
+            let (remaining, data) = parse_vlw(data_buffer)?;
+            (remaining, Message::VLW(data))
         }
         _ => unimplemented!(),
     };
@@ -639,6 +644,28 @@ mod talker_tests {
                 msg_num: Some(01),
                 msg_type: crate::fields::units::MessageType::Notice,
                 text: "ANTARIS ATR0620 HW 00000040",
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_vlw() {
+        let input = "$GPVLW,,N,,N,15.8,N,1.2,N*65\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::VLW(VLWMessage {
+                twd: None,
+                twd_unit: Some(WaterDistanceUnit::NauticalMile),
+                wd: None,
+                wd_unit: Some(WaterDistanceUnit::NauticalMile),
+                tgd: Some(15.8),
+                tgd_unit: Some(WaterDistanceUnit::NauticalMile),
+                gd: Some(1.2),
+                gd_unit: Some(WaterDistanceUnit::NauticalMile),
             }),
         };
 

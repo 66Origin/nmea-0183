@@ -63,6 +63,11 @@ pub enum NavigationalStatus {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum WaterDistanceUnit {
+    NauticalMile,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct SatelliteInView {
     pub id: Option<u8>,
     pub elv: Option<u8>,
@@ -76,6 +81,21 @@ pub enum MessageType {
     Warning,
     Notice,
     User,
+}
+
+pub fn parse_water_distance_unit(input: &str) -> IResult<&str, Option<WaterDistanceUnit>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('N') => (&input[1..], Some(WaterDistanceUnit::NauticalMile)),
+        Some(',') => (&input[1..], None),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_message_type(input: &str) -> IResult<&str, MessageType> {
