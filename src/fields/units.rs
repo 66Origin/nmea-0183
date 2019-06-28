@@ -132,35 +132,33 @@ fn parse_satellite_id(input: &str) -> IResult<&str, Option<u8>> {
 }
 
 pub fn parse_operation_mode(input: &str) -> IResult<&str, OperationMode> {
-    if input.len() < 2 {
+    if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    if input.chars().nth(1) != Some(',') {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    } else {
-        match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 2 items
-            Some('M') => Ok((&input[2..], OperationMode::Manual)),
-            Some('A') => Ok((&input[2..], OperationMode::Automatic)),
-            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('M') => (&input[1..], OperationMode::Manual),
+        Some('A') => (&input[1..], OperationMode::Automatic),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
         }
-    }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_status(input: &str) -> IResult<&str, Status> {
-    if input.len() < 2 {
+    if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
     }
-    if input.chars().nth(1) != Some(',') {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)))
-    } else {
-        match input.chars().nth(0) {
-            // Index subscription is safe since input has at least 2 items
-            Some('V') => Ok((&input[2..], Status::DataInvalid)),
-            Some('A') => Ok((&input[2..], Status::DataValid)),
-            _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('V') => (&input[1..], Status::DataInvalid),
+        Some('A') => (&input[1..], Status::DataValid),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
         }
-    }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_quality(input: &str) -> IResult<&str, Fix> {
@@ -182,6 +180,21 @@ pub fn parse_quality(input: &str) -> IResult<&str, Fix> {
     };
 
     remove_separator_if_next(',', remaining, result)
+}
+
+pub fn parse_pos_mode_vec(input: &str) -> IResult<&str, Vec<Fix>> {
+    let (remaining, mut pos_modes_str) = take_until(",")(input)?;
+    // Should actually be pos_modes_str,len() -1
+    // But i dont want to deal with negative values
+    let mut pos_modes = Vec::with_capacity(pos_modes_str.len());
+
+    while pos_modes_str.len() > 0 {
+        let res = parse_pos_mode(pos_modes_str)?;
+        pos_modes_str = res.0;
+        pos_modes.push(res.1);
+    }
+
+    remove_separator_if_next(',', remaining, pos_modes)
 }
 
 pub fn parse_pos_mode(input: &str) -> IResult<&str, Fix> {
@@ -361,7 +374,7 @@ pub fn parse_date(input: &str) -> IResult<&str, Option<NaiveDate>> {
     Ok((remaining, maybe_date))
 }
 
-// 235503.00
+// 235503.01
 // 125027
 pub fn parse_time(input: &str) -> IResult<&str, Option<NaiveTime>> {
     if input.len() < 1 {
@@ -378,7 +391,8 @@ pub fn parse_time(input: &str) -> IResult<&str, Option<NaiveTime>> {
                 let minutes = (raw_hms - hours * 10_000) / 100;
                 let seconds = raw_hms - hours * 10_000 - minutes * 100;
                 if let Ok(raw_milis) = str::parse::<u32>(milis) {
-                    NaiveTime::from_hms_milli_opt(hours, minutes, seconds, raw_milis)
+                    // Time is provided with two decimals
+                    NaiveTime::from_hms_milli_opt(hours, minutes, seconds, raw_milis * 10)
                 } else {
                     return Err(nom::Err::Failure((input, nom::error::ErrorKind::Digit)));
                 }
@@ -481,7 +495,11 @@ mod tests {
     #[test]
     fn test_parse_status_missing_comma() {
         let status = "V";
-        assert!(parse_status(status).is_err());
+        let expected_value = Status::DataInvalid;
+        let expected_remaining_input = "";
+        let res = parse_status(status).unwrap();
+        assert_eq!(expected_value, res.1);
+        assert_eq!(expected_remaining_input, res.0);
     }
 
     #[test]

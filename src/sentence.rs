@@ -4,6 +4,7 @@ use crate::fields::talker::parse_talker;
 use crate::fields::talker::Talker;
 use crate::messages::dtm::*;
 use crate::messages::gbq::*;
+use crate::messages::gbs::*;
 use crate::messages::gga::*;
 use crate::messages::gll::*;
 use crate::messages::glq::*;
@@ -12,7 +13,7 @@ use crate::messages::gsa::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::zda::*;
-use crate::messages::gbs::*;
+use crate::messages::gns::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -27,7 +28,7 @@ enum Message<'a> {
     GLL(GLLMessage),
     GLQ(GLQMessage<'a>),
     GNQ(GNQMessage<'a>),
-    GNS,
+    GNS(GNSMessage),
     GPQ,
     GRS,
     GSA(GSAMessage),
@@ -145,6 +146,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GBS => {
             let (remaining, data) = parse_gbs(data_buffer)?;
             (remaining, Message::GBS(data))
+        }
+        MessageType::GNS => {
+            let (remaining, data) = parse_gns(data_buffer)?;
+            (remaining, Message::GNS(data))
         }
         _ => unimplemented!(),
     };
@@ -501,6 +506,33 @@ mod talker_tests {
                 std_dev: Some(3.8),
                 system_id: Some(1),
                 signal_id: Some(0),
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gns() {
+        let input = "$GNGNS,103600.01,5114.51176,N,00012.29380,W,ANNN,07,1.18,111.5,45.6,,,V*00\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPSGLONASS,
+            message: Message::GNS(GNSMessage {
+                time: Some(NaiveTime::from_hms_milli(10, 36, 00, 10)),
+                lat: Some(Degree(51.145117600000006)), // floats ¯\_(ツ)_/¯
+                ns: Some(NorthSouth::North),
+                lon: Some(Degree(0.12293799999999999)), // floats ¯\_(ツ)_/¯
+                ew: Some(EastWest::West),
+                pos_mode: vec![Fix::AutonomousGNSSFix, Fix::NoFix, Fix::NoFix, Fix::NoFix],
+                num_sv: Some(7),
+                hdop: Some(1.18),
+                alt: Some(Meter(111.5)),
+                sep: Some(Meter(45.6)),
+                diff_age: None,
+                diff_station: None,
+                nav_status: Status::DataInvalid,
             }),
         };
 

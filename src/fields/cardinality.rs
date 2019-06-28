@@ -30,6 +30,21 @@ pub fn parse_north_south_indicator(input: &str) -> IResult<&str, NorthSouth> {
     remove_separator_if_next(',', remaining, result)
 }
 
+pub fn parse_maybe_north_south_indicator(input: &str) -> IResult<&str, Option<NorthSouth>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, result) = match input.take(1) {
+        "N" => (&input[1..], Some(NorthSouth::North)),
+        "S" => (&input[1..], Some(NorthSouth::South)),
+        "," => (&input[1..], None),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    remove_separator_if_next(',', remaining, result)
+}
+
 pub fn parse_maybe_east_west_indicator(input: &str) -> IResult<&str, Option<EastWest>> {
     if input.len() < 1 {
         return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));

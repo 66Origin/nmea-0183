@@ -1,6 +1,6 @@
-use crate::fields::*;
 use crate::fields::cardinality::*;
 use crate::fields::units::*;
+use crate::fields::*;
 use chrono::naive::NaiveTime;
 use nom::sequence::tuple;
 use nom::IResult;
