@@ -68,6 +68,18 @@ pub enum WaterDistanceUnit {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum CourseOverGroundUnit {
+    DegreesTrue,
+    DegreesMagnetic,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SpeedOverGroundUnit {
+    Knots,
+    KilometersPerHour,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct SatelliteInView {
     pub id: Option<u8>,
     pub elv: Option<u8>,
@@ -81,6 +93,38 @@ pub enum MessageType {
     Warning,
     Notice,
     User,
+}
+
+pub fn parse_course_over_ground_unit(input: &str) -> IResult<&str, Option<CourseOverGroundUnit>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('T') => (&input[1..], Some(CourseOverGroundUnit::DegreesTrue)),
+        Some('M') => (&input[1..], Some(CourseOverGroundUnit::DegreesMagnetic)),
+        Some(',') => (&input[1..], None),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    remove_separator_if_next(',', remaining, result)
+}
+
+pub fn parse_speed_over_ground_unit(input: &str) -> IResult<&str, Option<SpeedOverGroundUnit>> {
+    if input.len() < 1 {
+        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+    }
+    let (remaining, result) = match input.chars().nth(0) {
+        // Index subscription is safe since input has at least 1 char
+        Some('N') => (&input[1..], Some(SpeedOverGroundUnit::Knots)),
+        Some('K') => (&input[1..], Some(SpeedOverGroundUnit::KilometersPerHour)),
+        Some(',') => (&input[1..], None),
+        _ => {
+            return Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        }
+    };
+    remove_separator_if_next(',', remaining, result)
 }
 
 pub fn parse_water_distance_unit(input: &str) -> IResult<&str, Option<WaterDistanceUnit>> {

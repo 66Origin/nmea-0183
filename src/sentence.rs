@@ -18,6 +18,7 @@ use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::txt::*;
 use crate::messages::vlw::*;
+use crate::messages::vtg::*;
 use crate::messages::zda::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
@@ -42,7 +43,7 @@ enum Message<'a> {
     RMC(RMCMessage),
     TXT(TXTMessage<'a>),
     VLW(VLWMessage),
-    VTG,
+    VTG(VTGMessage),
     ZDA(ZDAMessage),
 }
 
@@ -175,6 +176,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::VLW => {
             let (remaining, data) = parse_vlw(data_buffer)?;
             (remaining, Message::VLW(data))
+        }
+        MessageType::VTG => {
+            let (remaining, data) = parse_vtg(data_buffer)?;
+            (remaining, Message::VTG(data))
         }
         _ => unimplemented!(),
     };
@@ -666,6 +671,29 @@ mod talker_tests {
                 tgd_unit: Some(WaterDistanceUnit::NauticalMile),
                 gd: Some(1.2),
                 gd_unit: Some(WaterDistanceUnit::NauticalMile),
+            }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_vtg() {
+        let input = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::VTG(VTGMessage {
+                cogt: Some(77.52),
+                cogt_unit: Some(CourseOverGroundUnit::DegreesTrue),
+                cogm: None,
+                cogm_unit: Some(CourseOverGroundUnit::DegreesMagnetic),
+                sogn: Some(0.004),
+                sogn_unit: Some(SpeedOverGroundUnit::Knots),
+                sogk: Some(0.008),
+                sogk_unit: Some(SpeedOverGroundUnit::KilometersPerHour),
+                pos_mode: Fix::AutonomousGNSSFix,
             }),
         };
 

@@ -14,4 +14,5 @@ pub mod gsv;
 pub mod rmc;
 pub mod txt;
 pub mod vlw;
+pub mod vtg;
 pub mod zda;
