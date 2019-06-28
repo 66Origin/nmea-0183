@@ -8,7 +8,7 @@ A nmea-0183 sentence parser written in Rust using Nom.
   <a href="https://travis-ci.com/YellowInnovation/nmea-0183">
       <img src="https://img.shields.io/travis/YellowInnovation/nmea-0183/master.svg" alt="Travis Build Status">
   </a>
-  <a href="https://docs.rs/nmea-0183">
+  <a href="https://docs.rs/nmea-0183/0.0.1/nmea_0183/">
       <img src="https://docs.rs/nmea-0183/badge.svg" alt="documentation">
   </a>
 </p>
