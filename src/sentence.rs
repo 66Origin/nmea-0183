@@ -12,6 +12,7 @@ use crate::messages::gsa::*;
 use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::zda::*;
+use crate::messages::gbs::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -21,7 +22,7 @@ use nom::IResult;
 enum Message<'a> {
     DTM(DTMMessage<'a>),
     GBQ(GBQMessage<'a>),
-    GBS,
+    GBS(GBSMessage),
     GGA(GGAMessage),
     GLL(GLLMessage),
     GLQ(GLQMessage<'a>),
@@ -140,6 +141,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GNQ => {
             let (remaining, data) = parse_gnq(data_buffer)?;
             (remaining, Message::GNQ(data))
+        }
+        MessageType::GBS => {
+            let (remaining, data) = parse_gbs(data_buffer)?;
+            (remaining, Message::GBS(data))
         }
         _ => unimplemented!(),
     };
@@ -473,6 +478,30 @@ mod talker_tests {
             sentence_type: SentenceType::Parametric,
             talker: Talker::MicroprocessorController,
             message: Message::GNQ(GNQMessage { msg_id: "RMC" }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gbs() {
+        let input = "$GPGBS,235458.00,1.4,1.3,3.1,03,,-21.4,3.8,1,0*5A\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::GBS(GBSMessage {
+                time: Some(NaiveTime::from_hms(23, 54, 58)),
+                lat_err: Some(Meter(1.4)),
+                lon_err: Some(Meter(1.3)),
+                alt_err: Some(Meter(3.1)),
+                sat_prn: Some(3),
+                prob: None,
+                res: Some(-21.4),
+                std_dev: Some(3.8),
+                system_id: Some(1),
+                signal_id: Some(0),
+            }),
         };
 
         let expected_output = Ok(("", expected_sentence));
