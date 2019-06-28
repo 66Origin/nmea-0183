@@ -1,6 +1,6 @@
 [package]
 name = "nmea-0183"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["o0Ignition0o <jeremy.lempereur@gmail.com>"]
 edition = "2018"
 description = "An NMEA-0183 sentence parser using nom 5."

@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::fields::sentence_type::parse_sentence_type;
 use crate::fields::sentence_type::SentenceType;
 use crate::fields::talker::parse_talker;
@@ -104,7 +105,25 @@ pub struct Sentence<'a> {
     message: Message<'a>,
 }
 
-pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
+/// Parse a sentence According to the NMEA-0183 standard.
+///
+/// # Examples
+///
+/// ```
+/// # use nmea_0183::sentence::parse;
+/// # fn main() {
+/// // Get a sentence to parse.
+/// // According to the specification, an nmea sentence must end with CRLF
+/// let raw_nmea = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06\r\n";
+/// let parsed_sentence = parse(raw_nmea).expect("Could not parse NMEA message.");
+/// # }
+/// ```
+pub fn parse(input: &str) -> Result<Sentence, Error> {
+    let parse_result = parse_sentence(input)?;
+    Ok(parse_result.1)
+}
+
+fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
     let (remaining, sentence_type) = parse_sentence_type(input)?;
     let (data_buffer, (talker, message_type)) = get_headers_if_sentence_valid(remaining)?;
 
@@ -232,8 +251,6 @@ fn decode_cs(s: &str) -> Result<u8, nom::Err<(&str, nom::error::ErrorKind)>> {
 
 fn sentence_is_valid(data: &str, checksum: u8) -> bool {
     let computed = data.chars().fold(0, |sum, c| sum ^ c as u8);
-    println!("{:X} ", computed);
-    println!("{:X} ", checksum);
     computed == checksum
 }
 
@@ -699,5 +716,37 @@ mod talker_tests {
 
         let expected_output = Ok(("", expected_sentence));
         assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_valid() {
+        let input = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::VTG(VTGMessage {
+                cogt: Some(77.52),
+                cogt_unit: Some(CourseOverGroundUnit::DegreesTrue),
+                cogm: None,
+                cogm_unit: Some(CourseOverGroundUnit::DegreesMagnetic),
+                sogn: Some(0.004),
+                sogn_unit: Some(SpeedOverGroundUnit::Knots),
+                sogk: Some(0.008),
+                sogk_unit: Some(SpeedOverGroundUnit::KilometersPerHour),
+                pos_mode: Fix::AutonomousGNSSFix,
+            }),
+        };
+
+        assert_eq!(expected_sentence, parse(input).unwrap());
+    }
+
+    #[test]
+    fn test_parse_missing_crlf() {
+        let input = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06";
+        let expected_error = Err(Error::ParseError(nom::Err::Error((
+            "06",
+            nom::error::ErrorKind::TakeUntil,
+        ))));
+        assert_eq!(expected_error, parse(input));
     }
 }
