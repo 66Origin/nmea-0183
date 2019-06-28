@@ -10,3 +10,4 @@ pub mod gsa;
 pub mod gsv;
 pub mod rmc;
 pub mod zda;
+pub mod gpq;

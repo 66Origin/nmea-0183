@@ -14,6 +14,7 @@ use crate::messages::gsv::*;
 use crate::messages::rmc::*;
 use crate::messages::zda::*;
 use crate::messages::gns::*;
+use crate::messages::gpq::*;
 use nom::bytes::complete::take_until;
 use nom::character::complete::crlf;
 use nom::sequence::tuple;
@@ -29,7 +30,7 @@ enum Message<'a> {
     GLQ(GLQMessage<'a>),
     GNQ(GNQMessage<'a>),
     GNS(GNSMessage),
-    GPQ,
+    GPQ(GPQMessage<'a>),
     GRS,
     GSA(GSAMessage),
     GST,
@@ -150,6 +151,10 @@ pub fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
         MessageType::GNS => {
             let (remaining, data) = parse_gns(data_buffer)?;
             (remaining, Message::GNS(data))
+        }
+        MessageType::GPQ => {
+            let (remaining, data) = parse_gpq(data_buffer)?;
+            (remaining, Message::GPQ(data))
         }
         _ => unimplemented!(),
     };
@@ -483,6 +488,19 @@ mod talker_tests {
             sentence_type: SentenceType::Parametric,
             talker: Talker::MicroprocessorController,
             message: Message::GNQ(GNQMessage { msg_id: "RMC" }),
+        };
+
+        let expected_output = Ok(("", expected_sentence));
+        assert_eq!(expected_output, parse_sentence(input));
+    }
+
+    #[test]
+    fn test_parse_gpq() {
+        let input = "$GPGPQ,RMC*21\r\n";
+        let expected_sentence = Sentence {
+            sentence_type: SentenceType::Parametric,
+            talker: Talker::GPS,
+            message: Message::GPQ(GPQMessage { msg_id: "RMC" }),
         };
 
         let expected_output = Ok(("", expected_sentence));
