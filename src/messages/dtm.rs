@@ -1,13 +1,6 @@
-use crate::fields::cardinality::EastWest;
-use crate::fields::cardinality::NorthSouth;
-use crate::fields::parse_string;
-use crate::fields::units::parse_meter;
-use crate::fields::units::parse_minute;
-use crate::fields::units::Meter;
-use crate::fields::{
-    cardinality::{parse_east_west_indicator, parse_north_south_indicator},
-    units::Minute,
-};
+use crate::fields::cardinality::*;
+use crate::fields::distance::*;
+use crate::parser_utils::*;
 use nom::sequence::tuple;
 use nom::IResult;
 

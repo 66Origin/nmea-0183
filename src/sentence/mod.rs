@@ -1,264 +1,18 @@
-use crate::error::Error;
-use crate::fields::sentence_type::parse_sentence_type;
-use crate::fields::sentence_type::SentenceType;
-use crate::fields::talker::parse_talker;
-use crate::fields::talker::Talker;
-use crate::messages::dtm::*;
-use crate::messages::gbq::*;
-use crate::messages::gbs::*;
-use crate::messages::gga::*;
-use crate::messages::gll::*;
-use crate::messages::glq::*;
-use crate::messages::gnq::*;
-use crate::messages::gns::*;
-use crate::messages::gpq::*;
-use crate::messages::grs::*;
-use crate::messages::gsa::*;
-use crate::messages::gst::*;
-use crate::messages::gsv::*;
-use crate::messages::rmc::*;
-use crate::messages::txt::*;
-use crate::messages::vlw::*;
-use crate::messages::vtg::*;
-use crate::messages::zda::*;
-use nom::bytes::complete::take_until;
-use nom::character::complete::crlf;
-use nom::sequence::tuple;
-use nom::IResult;
-
-#[derive(Debug, PartialEq)]
-enum Message<'a> {
-    DTM(DTMMessage<'a>),
-    GBQ(GBQMessage<'a>),
-    GBS(GBSMessage),
-    GGA(GGAMessage),
-    GLL(GLLMessage),
-    GLQ(GLQMessage<'a>),
-    GNQ(GNQMessage<'a>),
-    GNS(GNSMessage),
-    GPQ(GPQMessage<'a>),
-    GRS(GRSMessage),
-    GSA(GSAMessage),
-    GST(GSTMessage),
-    GSV(GSVMessage),
-    RMC(RMCMessage),
-    TXT(TXTMessage<'a>),
-    VLW(VLWMessage),
-    VTG(VTGMessage),
-    ZDA(ZDAMessage),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum MessageType {
-    DTM,
-    GBQ,
-    GBS,
-    GGA,
-    GLL,
-    GLQ,
-    GNQ,
-    GNS,
-    GPQ,
-    GRS,
-    GSA,
-    GST,
-    GSV,
-    RMC,
-    TXT,
-    VLW,
-    VTG,
-    ZDA,
-}
-
-fn parse_message_type(input: &str) -> IResult<&str, MessageType> {
-    if input.len() < 4 {
-        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
-    }
-    let (maybe_message_type, remaining) = input.split_at(4);
-    match maybe_message_type {
-        "DTM," => Ok((remaining, MessageType::DTM)),
-        "GBQ," => Ok((remaining, MessageType::GBQ)),
-        "GBS," => Ok((remaining, MessageType::GBS)),
-        "GGA," => Ok((remaining, MessageType::GGA)),
-        "GLL," => Ok((remaining, MessageType::GLL)),
-        "GLQ," => Ok((remaining, MessageType::GLQ)),
-        "GNQ," => Ok((remaining, MessageType::GNQ)),
-        "GNS," => Ok((remaining, MessageType::GNS)),
-        "GPQ," => Ok((remaining, MessageType::GPQ)),
-        "GRS," => Ok((remaining, MessageType::GRS)),
-        "GSA," => Ok((remaining, MessageType::GSA)),
-        "GST," => Ok((remaining, MessageType::GST)),
-        "GSV," => Ok((remaining, MessageType::GSV)),
-        "RMC," => Ok((remaining, MessageType::RMC)),
-        "TXT," => Ok((remaining, MessageType::TXT)),
-        "VLW," => Ok((remaining, MessageType::VLW)),
-        "VTG," => Ok((remaining, MessageType::VTG)),
-        "ZDA," => Ok((remaining, MessageType::ZDA)),
-        _ => Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf))),
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Sentence<'a> {
-    sentence_type: SentenceType,
-    talker: Talker,
-    message: Message<'a>,
-}
-
-/// Parse a sentence According to the NMEA-0183 standard.
-///
-/// # Examples
-///
-/// ```
-/// # use nmea_0183::sentence::parse;
-/// # fn main() {
-/// // Get a sentence to parse.
-/// // According to the specification, an nmea sentence must end with CRLF
-/// let raw_nmea = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06\r\n";
-/// let parsed_sentence = parse(raw_nmea).expect("Could not parse NMEA message.");
-/// # }
-/// ```
-pub fn parse(input: &str) -> Result<Sentence, Error> {
-    let parse_result = parse_sentence(input)?;
-    Ok(parse_result.1)
-}
-
-fn parse_sentence(input: &str) -> IResult<&str, Sentence> {
-    let (remaining, sentence_type) = parse_sentence_type(input)?;
-    let (data_buffer, (talker, message_type)) = get_headers_if_sentence_valid(remaining)?;
-
-    let (remaining_data, message) = match message_type {
-        MessageType::DTM => {
-            let (remaining, data) = parse_dtm(data_buffer)?;
-            (remaining, Message::DTM(data))
-        }
-        MessageType::GBQ => {
-            let (remaining, data) = parse_gbq(data_buffer)?;
-            (remaining, Message::GBQ(data))
-        }
-        MessageType::GGA => {
-            let (remaining, data) = parse_gga(data_buffer)?;
-            (remaining, Message::GGA(data))
-        }
-        MessageType::GSA => {
-            let (remaining, data) = parse_gsa(data_buffer)?;
-            (remaining, Message::GSA(data))
-        }
-        MessageType::GSV => {
-            let (remaining, data) = parse_gsv(data_buffer)?;
-            (remaining, Message::GSV(data))
-        }
-        MessageType::GLL => {
-            let (remaining, data) = parse_gll(data_buffer)?;
-            (remaining, Message::GLL(data))
-        }
-        MessageType::ZDA => {
-            let (remaining, data) = parse_zda(data_buffer)?;
-            (remaining, Message::ZDA(data))
-        }
-        MessageType::RMC => {
-            let (remaining, data) = parse_rmc(data_buffer)?;
-            (remaining, Message::RMC(data))
-        }
-        MessageType::GLQ => {
-            let (remaining, data) = parse_glq(data_buffer)?;
-            (remaining, Message::GLQ(data))
-        }
-        MessageType::GNQ => {
-            let (remaining, data) = parse_gnq(data_buffer)?;
-            (remaining, Message::GNQ(data))
-        }
-        MessageType::GBS => {
-            let (remaining, data) = parse_gbs(data_buffer)?;
-            (remaining, Message::GBS(data))
-        }
-        MessageType::GNS => {
-            let (remaining, data) = parse_gns(data_buffer)?;
-            (remaining, Message::GNS(data))
-        }
-        MessageType::GPQ => {
-            let (remaining, data) = parse_gpq(data_buffer)?;
-            (remaining, Message::GPQ(data))
-        }
-        MessageType::GRS => {
-            let (remaining, data) = parse_grs(data_buffer)?;
-            (remaining, Message::GRS(data))
-        }
-        MessageType::GST => {
-            let (remaining, data) = parse_gst(data_buffer)?;
-            (remaining, Message::GST(data))
-        }
-        MessageType::TXT => {
-            let (remaining, data) = parse_txt(data_buffer)?;
-            (remaining, Message::TXT(data))
-        }
-        MessageType::VLW => {
-            let (remaining, data) = parse_vlw(data_buffer)?;
-            (remaining, Message::VLW(data))
-        }
-        MessageType::VTG => {
-            let (remaining, data) = parse_vtg(data_buffer)?;
-            (remaining, Message::VTG(data))
-        }
-        _ => unimplemented!(),
-    };
-
-    if remaining_data.len() == 0 {
-        Ok((
-            remaining_data,
-            Sentence {
-                sentence_type,
-                talker,
-                message,
-            },
-        ))
-    } else {
-        return Err(nom::Err::Failure((input, nom::error::ErrorKind::NonEmpty)));
-    }
-}
-
-fn get_headers_if_sentence_valid(input: &str) -> IResult<&str, (Talker, MessageType)> {
-    let (after_data, data) = take_until("*")(input)?;
-    // Index subscription is safe because take_until does not consume the pattern
-    let (after_checksum, checksum) = parse_checksum(&after_data[1..])?;
-    if !sentence_is_valid(data, checksum) {
-        return Err(nom::Err::Failure((input, nom::error::ErrorKind::Verify)));
-    }
-    if crlf(after_checksum)?.0.len() != 0 {
-        return Err(nom::Err::Failure((input, nom::error::ErrorKind::NonEmpty)));
-    }
-    Ok(tuple((parse_talker, parse_message_type))(data)?)
-}
-
-fn parse_checksum(input: &str) -> IResult<&str, u8> {
-    let (after_cs, maybe_cs) = take_until("\r")(input)?;
-    if let Ok(cs) = decode_cs(maybe_cs) {
-        Ok((after_cs, cs))
-    } else {
-        Err(nom::Err::Failure((input, nom::error::ErrorKind::Digit)))
-    }
-}
-
-fn decode_cs(s: &str) -> Result<u8, nom::Err<(&str, nom::error::ErrorKind)>> {
-    // The checksum is supposed to be 2 characters wide
-    if s.chars().nth(1).is_none() {
-        return Err(nom::Err::Failure((s, nom::error::ErrorKind::Complete)));
-    } else {
-        u8::from_str_radix(&s[0..2], 16)
-            .map_err(|_| nom::Err::Failure((s, nom::error::ErrorKind::Digit)))
-    }
-}
-
-fn sentence_is_valid(data: &str, checksum: u8) -> bool {
-    let computed = data.chars().fold(0, |sum, c| sum ^ c as u8);
-    computed == checksum
-}
+pub(crate) mod parser;
+mod structs;
+pub(crate) use parser::*;
+pub use structs::*;
 
 #[cfg(test)]
-mod talker_tests {
+mod sentence_tests {
     use super::*;
-    use crate::fields::cardinality::{EastWest, NorthSouth};
-    use crate::fields::units::*;
+    use crate::fields::cardinality::*;
+    use crate::fields::distance::*;
+    use crate::fields::identity::*;
+    use crate::fields::parameter::*;
+    use crate::fields::speed::*;
+    use crate::messages::*;
+
     use chrono::naive::{NaiveDate, NaiveTime};
 
     #[test]
@@ -664,7 +418,7 @@ mod talker_tests {
             message: Message::TXT(TXTMessage {
                 num_msg: Some(01),
                 msg_num: Some(01),
-                msg_type: crate::fields::units::MessageType::Notice,
+                msg_type: MessageLevel::Notice,
                 text: "ANTARIS ATR0620 HW 00000040",
             }),
         };
@@ -717,36 +471,38 @@ mod talker_tests {
         let expected_output = Ok(("", expected_sentence));
         assert_eq!(expected_output, parse_sentence(input));
     }
+}
+
+#[cfg(test)]
+mod sentence_type_tests {
+    use super::*;
+    use crate::fields::parameter::*;
 
     #[test]
-    fn test_parse_valid() {
-        let input = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06\r\n";
-        let expected_sentence = Sentence {
-            sentence_type: SentenceType::Parametric,
-            talker: Talker::GPS,
-            message: Message::VTG(VTGMessage {
-                cogt: Some(77.52),
-                cogt_unit: Some(CourseOverGroundUnit::DegreesTrue),
-                cogm: None,
-                cogm_unit: Some(CourseOverGroundUnit::DegreesMagnetic),
-                sogn: Some(0.004),
-                sogn_unit: Some(SpeedOverGroundUnit::Knots),
-                sogk: Some(0.008),
-                sogk_unit: Some(SpeedOverGroundUnit::KilometersPerHour),
-                pos_mode: Fix::AutonomousGNSSFix,
-            }),
-        };
-
-        assert_eq!(expected_sentence, parse(input).unwrap());
+    fn test_parse_parametric_parse_sentence_type() {
+        let input = "$foo bar";
+        let expected_output = Ok(("foo bar", SentenceType::Parametric));
+        assert_eq!(expected_output, parse_sentence_type(input));
     }
 
     #[test]
-    fn test_parse_missing_crlf() {
-        let input = "$GPVTG,77.52,T,,M,0.004,N,0.008,K,A*06";
-        let expected_error = Err(Error::ParseError(nom::Err::Error((
-            "06",
-            nom::error::ErrorKind::TakeUntil,
-        ))));
-        assert_eq!(expected_error, parse(input));
+    fn test_parse_encapsulation_parse_sentence_type() {
+        let input = "!foo bar";
+        let expected_output = Ok(("foo bar", SentenceType::Encapsulation));
+        assert_eq!(expected_output, parse_sentence_type(input));
+    }
+
+    #[test]
+    fn test_parse_encapsulation_invalid_type() {
+        let input = "*foo bar";
+        let expected_output = Err(nom::Err::Failure((input, nom::error::ErrorKind::OneOf)));
+        assert_eq!(expected_output, parse_sentence_type(input));
+    }
+
+    #[test]
+    fn test_parse_encapsulation_empty_input() {
+        let input = "";
+        let expected_output = Err(nom::Err::Failure((input, nom::error::ErrorKind::Complete)));
+        assert_eq!(expected_output, parse_sentence_type(input));
     }
 }

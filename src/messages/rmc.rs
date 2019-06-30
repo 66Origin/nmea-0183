@@ -1,5 +1,8 @@
 use crate::fields::cardinality::*;
-use crate::fields::units::*;
+use crate::fields::distance::*;
+use crate::fields::parameter::*;
+use crate::fields::speed::*;
+use crate::fields::time::*;
 use chrono::naive::{NaiveDate, NaiveTime};
 use nom::sequence::tuple;
 use nom::IResult;

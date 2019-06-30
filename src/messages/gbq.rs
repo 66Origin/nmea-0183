@@ -1,4 +1,4 @@
-use crate::fields::parse_string;
+use crate::parser_utils::*;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]

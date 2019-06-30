@@ -1,6 +1,5 @@
-use crate::fields::parse_string;
-use crate::fields::parse_u8;
-use crate::fields::units::*;
+use crate::fields::parameter::*;
+use crate::parser_utils::*;
 use nom::sequence::tuple;
 use nom::IResult;
 
@@ -8,7 +7,7 @@ use nom::IResult;
 pub struct TXTMessage<'a> {
     pub num_msg: Option<u8>,
     pub msg_num: Option<u8>,
-    pub msg_type: MessageType,
+    pub msg_type: MessageLevel,
     pub text: &'a str,
 }
 
@@ -38,7 +37,7 @@ mod tests {
             TXTMessage {
                 num_msg: Some(01),
                 msg_num: Some(01),
-                msg_type: MessageType::Notice,
+                msg_type: MessageLevel::Notice,
                 text: "ANTARIS ATR0620 HW 00000040",
             },
         ));
