@@ -31,6 +31,8 @@ pub fn parse_gsv(input: &str) -> IResult<&str, GSVMessage> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fields::distance::Degree;
+    use crate::fields::parameter::DBHZ;
 
     #[test]
     fn test_parse_gsv() {
@@ -44,27 +46,27 @@ mod tests {
                 satellites: vec![
                     SatelliteInView {
                         id: Some(3),
-                        elv: Some(3),
-                        az: Some(111),
-                        cno: Some(0),
+                        elv: Some(Degree(3.)),
+                        az: Some(Degree(111.)),
+                        cno: Some(DBHZ(0.)),
                     },
                     SatelliteInView {
                         id: Some(4),
-                        elv: Some(15),
-                        az: Some(270),
-                        cno: Some(0),
+                        elv: Some(Degree(15.)),
+                        az: Some(Degree(270.)),
+                        cno: Some(DBHZ(0.)),
                     },
                     SatelliteInView {
                         id: Some(6),
-                        elv: Some(1),
-                        az: Some(10),
-                        cno: Some(0),
+                        elv: Some(Degree(1.)),
+                        az: Some(Degree(10.)),
+                        cno: Some(DBHZ(0.)),
                     },
                     SatelliteInView {
                         id: Some(13),
-                        elv: Some(6),
-                        az: Some(292),
-                        cno: Some(0),
+                        elv: Some(Degree(6.)),
+                        az: Some(Degree(292.)),
+                        cno: Some(DBHZ(0.)),
                     },
                 ],
             },

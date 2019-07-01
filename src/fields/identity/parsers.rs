@@ -1,4 +1,6 @@
 use super::structs::*;
+use crate::fields::distance::parse_raw_degree;
+use crate::fields::parameter::parse_dbhz;
 use crate::parser_utils::*;
 use nom::sequence::tuple;
 use nom::IResult;
@@ -98,7 +100,8 @@ pub fn parse_satellites_in_view(input: &str) -> IResult<&str, Vec<SatelliteInVie
 }
 
 fn parse_satellite_in_view(input: &str) -> IResult<&str, SatelliteInView> {
-    let (remaining, (id, elv, az, cno)) = tuple((parse_u8, parse_u8, parse_u16, parse_u8))(input)?;
+    let (remaining, (id, elv, az, cno)) =
+        tuple((parse_u8, parse_raw_degree, parse_raw_degree, parse_dbhz))(input)?;
     Ok((remaining, SatelliteInView { id, elv, az, cno }))
 }
 

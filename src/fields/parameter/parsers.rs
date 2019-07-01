@@ -155,3 +155,12 @@ pub fn parse_message_type(input: &str) -> IResult<&str, MessageLevel> {
 pub fn parse_dilution_of_precision(input: &str) -> IResult<&str, Option<f64>> {
     parse_float(input)
 }
+
+pub fn parse_dbhz(input: &str) -> IResult<&str, Option<DBHZ>> {
+    let (remaining, sec) = parse_float(input)?;
+    if let Some(s) = sec {
+        Ok((remaining, Some(DBHZ(s))))
+    } else {
+        Ok((remaining, None))
+    }
+}

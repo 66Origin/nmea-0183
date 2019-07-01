@@ -9,12 +9,12 @@ mod messages;
 mod parser_utils;
 pub mod sentence;
 
-pub use sentence::*;
 pub use fields::cardinality::*;
 pub use fields::distance::*;
 pub use fields::identity::*;
 pub use fields::parameter::*;
 pub use fields::speed::*;
+pub use sentence::*;
 
 /// Parse a sentence According to the NMEA-0183 standard.
 ///
