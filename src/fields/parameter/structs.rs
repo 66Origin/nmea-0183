@@ -42,8 +42,12 @@ pub enum NavigationalStatus {
 }
 
 #[derive(Debug, PartialEq)]
+/// The sentence type is defined
+/// in the first character of an NMEA sentence.
 pub enum SentenceType {
+    /// Conventional field delimited messages
     Parametric,
+    /// Messages that have special encapsulation (=fields) in them
     Encapsulation,
 }
 

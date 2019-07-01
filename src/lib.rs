@@ -1,7 +1,7 @@
 extern crate chrono;
 extern crate nom;
 
-use crate::error::Error;
+pub use crate::error::Error;
 
 pub mod error;
 mod fields;
@@ -10,6 +10,11 @@ mod parser_utils;
 pub mod sentence;
 
 pub use sentence::*;
+pub use fields::cardinality::*;
+pub use fields::distance::*;
+pub use fields::identity::*;
+pub use fields::parameter::*;
+pub use fields::speed::*;
 
 /// Parse a sentence According to the NMEA-0183 standard.
 ///
@@ -17,11 +22,12 @@ pub use sentence::*;
 ///
 /// ```
 /// # use nmea_0183::parse;
-/// # fn main() {
+/// # use nmea_0183::Error;
+/// # fn main() -> Result<(),  Error<'static>> {
 /// // Get a sentence to parse.
 /// // According to the specification, an nmea sentence must end with CRLF
 /// let raw_nmea = "$GPGGA,092725.00,4717.11399,N,00833.91590,E,1,08,1.01,499.6,M,48.0,M,,*5B\r\n";
-/// let parsed_sentence = parse(raw_nmea).expect("Could not parse NMEA message.");
+/// let parsed_sentence = parse(raw_nmea)?;
 ///    /*
 ///    Sentence {
 ///        sentence_type: Parametric,
@@ -42,6 +48,7 @@ pub use sentence::*;
 ///        })
 ///    }
 ///    */
+/// Ok(())
 /// # }
 /// ```
 pub fn parse(input: &str) -> Result<Sentence, Error> {
@@ -52,9 +59,6 @@ pub fn parse(input: &str) -> Result<Sentence, Error> {
 #[cfg(test)]
 mod talker_tests {
     use super::*;
-    use crate::fields::identity::*;
-    use crate::fields::parameter::*;
-    use crate::fields::speed::*;
 
     #[test]
     fn test_parse_valid() {
