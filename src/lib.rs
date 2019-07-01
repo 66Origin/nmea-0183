@@ -4,16 +4,11 @@ extern crate nom;
 pub use crate::error::Error;
 
 pub mod error;
-mod fields;
-mod messages;
+pub mod fields;
+pub mod messages;
 mod parser_utils;
 pub mod sentence;
 
-pub use fields::cardinality::*;
-pub use fields::distance::*;
-pub use fields::identity::*;
-pub use fields::parameter::*;
-pub use fields::speed::*;
 pub use sentence::*;
 
 /// Parse a sentence According to the NMEA-0183 standard.
@@ -59,6 +54,9 @@ pub fn parse(input: &str) -> Result<Sentence, Error> {
 #[cfg(test)]
 mod talker_tests {
     use super::*;
+    use fields::identity::*;
+    use fields::parameter::*;
+    use fields::speed::*;
 
     #[test]
     fn test_parse_valid() {

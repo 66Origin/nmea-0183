@@ -5,6 +5,10 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Datum Reference
+/// This message gives the difference between the current datum and the referencedatum.
+/// The current datum defaults to WGS84.
+/// The reference datum cannot be changed and is always set to WGS84.
 pub struct DTMMessage<'a> {
     pub datum: &'a str,
     pub sub_datum: &'a str,
