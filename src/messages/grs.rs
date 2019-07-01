@@ -7,11 +7,17 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// GNSS Range Residuals
 pub struct GRSMessage {
+    /// UTC time of associated position fix,
     pub time: Option<NaiveTime>,
+    /// Computation method used
     pub mode: Option<ComputationMethod>,
+    /// Range residuals for SVs used in navigation
     pub residuals: [Option<Meter>; 12],
+    /// NMEA defined GNSS System ID,
     pub system_id: Option<u8>,
+    /// NMEA defined GNSS Signal ID
     pub signal_id: Option<u8>,
 }
 

@@ -6,17 +6,26 @@ use nom::IResult;
 
 #[derive(Debug, PartialEq)]
 /// Datum Reference
+///
 /// This message gives the difference between the current datum and the referencedatum.
 /// The current datum defaults to WGS84.
 /// The reference datum cannot be changed and is always set to WGS84.
 pub struct DTMMessage<'a> {
+    /// Local datum code
     pub datum: &'a str,
+    /// A null field
     pub sub_datum: &'a str,
+    /// Offset in Latitude
     pub lat: Option<Minute>,
+    /// North/South indicator
     pub ns: NorthSouth,
+    /// Offset in Longitude
     pub lon: Option<Minute>,
+    /// East/West indicator
     pub ew: EastWest,
+    /// Offset in altitude
     pub alt: Option<Meter>,
+    /// Reference datum code
     pub ref_datum: &'a str,
 }
 

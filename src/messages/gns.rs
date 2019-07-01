@@ -8,19 +8,33 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// GNSS fix data
 pub struct GNSMessage {
+    /// UTC time
     pub time: Option<NaiveTime>,
+    /// Latitude
     pub lat: Option<Degree>,
+    /// North/South indicator
     pub ns: Option<NorthSouth>,
+    /// Longitude
     pub lon: Option<Degree>,
+    /// East/West indicator
     pub ew: Option<EastWest>,
+    /// Positioning mode,
     pub pos_mode: Vec<Fix>,
+    /// Number of satellites used
     pub num_sv: Option<u8>,
+    /// Horizontal Dilution of Precision
     pub hdop: Option<f64>,
+    /// Altitude above mean sea level
     pub alt: Option<Meter>,
+    /// Geoid separation
     pub sep: Option<Meter>,
+    /// Age of differential corrections
     pub diff_age: Option<Second>,
+    /// ID of station providing differential corrections
     pub diff_station: Option<u8>,
+    /// Navigational status indicator
     pub nav_status: Status,
 }
 

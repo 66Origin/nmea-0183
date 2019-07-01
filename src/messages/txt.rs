@@ -4,10 +4,15 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Text Transmission
 pub struct TXTMessage<'a> {
+    /// Total number of messages in thistransmission
     pub num_msg: Option<u8>,
+    /// Message number in this transmission
     pub msg_num: Option<u8>,
+    /// Text identifier
     pub msg_type: MessageLevel,
+    /// The payload
     pub text: &'a str,
 }
 

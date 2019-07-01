@@ -5,12 +5,19 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Time and Date
 pub struct ZDAMessage {
+    /// UTC Time
     pub time: Option<NaiveTime>,
+    /// UTC day
     pub day: Option<u8>,
+    /// UTC month
     pub month: Option<u8>,
+    /// UTC year
     pub year: Option<u16>,
+    /// Local time zone hours
     pub ltzh: Option<u8>,
+    /// Local time zone hours
     pub ltzn: Option<u8>,
 }
 

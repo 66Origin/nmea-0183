@@ -4,10 +4,16 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// GNSS Satellites in View
 pub struct GSVMessage {
+    /// Number of messages, total number of GSV messages being output
     pub total_msgs: u8,
+    /// Number of this message
     pub msg_num: u8,
+    /// Number of known satellites in view regarding
+    /// both the talker ID and the signalId
     pub satellite_num: u8,
+    /// Satellites in view
     pub satellites: Vec<SatelliteInView>,
 }
 

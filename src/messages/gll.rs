@@ -7,13 +7,21 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Latitude and longitude, with time of position fix and status
 pub struct GLLMessage {
+    /// Latitude
     pub lat: Option<Degree>,
+    /// North/South indicator
     pub ns: NorthSouth,
+    /// Longitude
     pub lon: Option<Degree>,
+    /// East/West indicator
     pub ew: EastWest,
+    /// UTC time
     pub time: Option<NaiveTime>,
+    /// Data validity status
     pub status: Status,
+    /// Positioning mode
     pub pos_mode: Fix,
 }
 

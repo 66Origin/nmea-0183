@@ -4,14 +4,23 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Dual ground/water distance
 pub struct VLWMessage {
+    /// Total cumulative water distance:
     pub twd: Option<f64>,
+    /// Total cumulative water distance units
     pub twd_unit: Option<WaterDistanceUnit>,
+    /// Water distance since reset
     pub wd: Option<f64>,
+    /// Water distance since reset units
     pub wd_unit: Option<WaterDistanceUnit>,
+    /// Total cumulative ground distance
     pub tgd: Option<f64>,
+    /// Total cumulative ground distance units
     pub tgd_unit: Option<WaterDistanceUnit>,
+    /// Ground distance since reset
     pub gd: Option<f64>,
+    /// Ground distance since reset units
     pub gd_unit: Option<WaterDistanceUnit>,
 }
 

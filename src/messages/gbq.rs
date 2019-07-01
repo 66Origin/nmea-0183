@@ -2,7 +2,9 @@ use crate::parser_utils::*;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Poll a standard message if the current Talker ID is GB
 pub struct GBQMessage<'a> {
+    /// Message ID of the message to be polled
     pub msg_id: &'a str,
 }
 

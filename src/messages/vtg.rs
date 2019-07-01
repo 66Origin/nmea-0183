@@ -5,15 +5,25 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Course over ground and Ground speed
 pub struct VTGMessage {
+    /// Course over ground (true)
     pub cogt: Option<f64>,
+    /// Course over ground units
     pub cogt_unit: Option<CourseOverGroundUnit>,
+    /// Course over ground (magnetic)
     pub cogm: Option<f64>,
+    /// Course over ground units
     pub cogm_unit: Option<CourseOverGroundUnit>,
+    /// Speed over ground
     pub sogn: Option<f64>,
+    /// Speed over ground units
     pub sogn_unit: Option<SpeedOverGroundUnit>,
+    /// Speed over ground
     pub sogk: Option<f64>,
+    /// Speed over ground units
     pub sogk_unit: Option<SpeedOverGroundUnit>,
+    /// Mode Indicator
     pub pos_mode: Fix,
 }
 

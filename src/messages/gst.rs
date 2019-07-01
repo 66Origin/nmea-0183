@@ -5,14 +5,23 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// GNSS Pseudo Range Error Statistics
 pub struct GSTMessage {
+    /// UTC time of associated position fix
     pub time: Option<NaiveTime>,
+    /// RMS value of the standard deviation of the ranges
     pub range_rms: Option<Meter>,
+    /// Standard deviation of semi-major axis
     pub std_major: Option<Meter>,
+    /// Standard deviation of semi-minor axis
     pub std_minor: Option<Meter>,
+    /// Orientation of semi-major axis
     pub orient: Option<Degree>,
+    /// Standard deviation of latitude error
     pub std_lat: Option<Meter>,
+    /// Standard deviation of longitude error
     pub std_lon: Option<Meter>,
+    /// Standard deviation of altitude error
     pub std_alt: Option<Meter>,
 }
 

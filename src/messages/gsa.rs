@@ -5,12 +5,19 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// GNSS DOP and Active Satellites
 pub struct GSAMessage {
+    /// Operation mode
     pub op_mode: OperationMode,
+    /// Navigation mode
     pub nav_mode: NavigationMode,
+    /// Satellite number
     pub sattelite_ids: [Option<u8>; 12],
+    /// Position dilution of precision
     pub pdop: Option<Meter>,
+    /// Horizontal dilution of precision
     pub hdop: Option<Meter>,
+    /// Vertical dilution of precision
     pub vdop: Option<Meter>,
 }
 

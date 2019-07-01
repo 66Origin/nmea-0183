@@ -8,18 +8,31 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Global positioning system fix data
 pub struct GGAMessage {
+    /// UTC time
     pub time: Option<NaiveTime>,
+    /// Latitude
     pub lat: Option<Degree>,
+    /// North/South indicator
     pub ns: NorthSouth,
+    /// Longitude
     pub lon: Option<Degree>,
+    /// East/West indicator
     pub ew: EastWest,
+    /// Quality indicator for position fix
     pub quality: Fix,
+    /// Number of satellites used
     pub num_sv: Option<u8>,
+    /// Horizontal Dilution of Precision
     pub hdop: Option<f64>,
+    /// Altitude above mean sea level
     pub alt: Option<Meter>,
+    /// Geoid separation
     pub sep: Option<Meter>,
+    /// Age of differential corrections
     pub diff_age: Option<Second>,
+    /// ID of station providing differential corrections
     pub diff_station: Option<u8>,
 }
 

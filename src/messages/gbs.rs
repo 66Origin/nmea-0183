@@ -6,16 +6,27 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// GNSS Satellite Fault Detection
 pub struct GBSMessage {
+    /// UTC time to which this RAIM sentencebelongs
     pub time: Option<NaiveTime>,
+    /// Expected error in latitude
     pub lat_err: Option<Meter>,
+    /// Expected error in longitude
     pub lon_err: Option<Meter>,
+    /// Expected error in altitude
     pub alt_err: Option<Meter>,
+    /// Satellite ID of most likely failed satellite
     pub sat_prn: Option<u8>,
+    /// Probability of missed detection
     pub prob: Option<u8>,
+    /// Estimated bias of most likely failed satellite
     pub res: Option<f64>,
+    /// Standard deviation of estimated bias
     pub std_dev: Option<f64>,
+    /// NMEA defined GNSS System ID
     pub system_id: Option<u8>,
+    /// NMEA defined GNSS Signal ID,
     pub signal_id: Option<u8>,
 }
 

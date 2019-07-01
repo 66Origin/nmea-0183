@@ -8,19 +8,32 @@ use nom::sequence::tuple;
 use nom::IResult;
 
 #[derive(Debug, PartialEq)]
+/// Recommended Minimum data
 pub struct RMCMessage {
+    /// UTC time
     pub time: Option<NaiveTime>,
+    /// Data validity status
     pub status: Status,
+    /// Latitude
     pub lat: Option<Degree>,
+    /// North/South indicator
     pub ns: NorthSouth,
+    /// Longitude
     pub lon: Option<Degree>,
+    /// East/West indicator
     pub ew: EastWest,
+    /// Speed over ground
     pub spd: Option<Knot>,
+    /// Course over ground
     pub cog: Option<Degree>,
     pub date: Option<NaiveDate>,
+    /// Magnetic variation value.
     pub mv: Option<Degree>,
+    /// Magnetic variation E/W indicator.
     pub mv_ew: Option<EastWest>,
+    /// Mode Indicator
     pub pos_mode: Fix,
+    /// Navigational status indicator
     pub nav_status: NavigationalStatus,
 }
 
