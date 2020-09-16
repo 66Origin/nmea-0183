@@ -6,7 +6,8 @@ edition = "2018"
 description = "An NMEA-0183 sentence parser using nom 5."
 repository = "https://github.com/YellowInnovation/nmea-0183"
 documentation = "https://docs.rs/nmea-0183/"
-keywords = ["nmea", "nmea-0183", "gps", "nom", "parser"]
+keywords = ["nmea", "nmea-0183", "gps", "nom", "parser", "no_std"]
+categories = ["no-std"]
 license = "MIT/Apache-2.0"
 include = [
     "**/*.rs",
