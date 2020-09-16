@@ -88,9 +88,9 @@ pub fn parse_talker(input: &str) -> IResult<&str, Talker> {
     }
 }
 
-pub fn parse_satellites_in_view(input: &str) -> IResult<&str, Vec<SatelliteInView>> {
+pub fn parse_satellites_in_view(input: &str) -> IResult<&str, SatelliteInViewList> {
     let mut remaining = input;
-    let mut satellites = Vec::new();
+    let mut satellites = SatelliteInViewList::new();
     while remaining.len() != 0 {
         let sv = parse_satellite_in_view(remaining)?;
         remaining = sv.0;

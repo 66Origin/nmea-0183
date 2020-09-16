@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 #[derive(Debug, PartialEq)]
 /// GPS quality indicator
 pub enum Fix {
@@ -14,6 +16,9 @@ pub enum Fix {
     /// U-BLOX dead reckoning fix
     EstimatedOrDeadReckoningFix,
 }
+
+/// List of [Fix]. Maximum of 4 as per GNS definition.
+pub type FixList = ArrayVec<[Fix; 4]>;
 
 #[derive(Debug, PartialEq)]
 /// Defines if the provided data is valid or not.
