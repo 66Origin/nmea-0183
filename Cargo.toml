@@ -17,7 +17,3 @@ include = [
 nom = { version = "5.1.0", default-features = false }
 chrono = { version = "0.4.7", default-features = false }
 arrayvec = { version = "0.5", default-features = false }
-
-[features]
-default = ["std"]
-std = ["nom/std", "chrono/std"]
