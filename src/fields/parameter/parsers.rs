@@ -112,7 +112,9 @@ pub fn parse_pos_mode_vec(input: &str) -> IResult<&str, FixList> {
     while pos_modes_str.len() > 0 {
         let res = parse_pos_mode(pos_modes_str)?;
         pos_modes_str = res.0;
-        pos_modes.push(res.1);
+        pos_modes
+            .try_push(res.1)
+            .map_err(|_| nom::Err::Failure((pos_modes_str, nom::error::ErrorKind::TooLarge)))?;
     }
 
     remove_separator_if_next(',', remaining, pos_modes)

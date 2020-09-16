@@ -94,7 +94,9 @@ pub fn parse_satellites_in_view(input: &str) -> IResult<&str, SatelliteInViewLis
     while remaining.len() != 0 {
         let sv = parse_satellite_in_view(remaining)?;
         remaining = sv.0;
-        satellites.push(sv.1);
+        satellites
+            .try_push(sv.1)
+            .map_err(|_| nom::Err::Failure((remaining, nom::error::ErrorKind::TooLarge)))?;
     }
     Ok((remaining, satellites))
 }
