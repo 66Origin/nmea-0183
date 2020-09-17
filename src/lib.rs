@@ -8,7 +8,7 @@ pub use crate::error::Error;
 pub mod error;
 pub mod fields;
 pub mod messages;
-mod parser_utils;
+pub mod parser_utils;
 pub mod sentence;
 
 pub use sentence::*;
