@@ -31,9 +31,9 @@ pub fn parse_time(input: &str) -> IResult<&str, Option<NaiveTime>> {
     }
     let (remaining, time_str) = parse_string(input)?;
 
-    let splitted: Vec<&str> = time_str.split('.').collect();
+    let mut split = time_str.split('.');
 
-    let maybe_time = match (splitted.get(0), splitted.get(1)) {
+    let maybe_time = match (split.next(), split.next()) {
         (Some(hms), Some(milis)) => {
             if let Ok(raw_hms) = str::parse::<u32>(hms) {
                 let hours = raw_hms / 10_000;

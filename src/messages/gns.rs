@@ -21,7 +21,7 @@ pub struct GNSMessage {
     /// East/West indicator
     pub ew: Option<EastWest>,
     /// Positioning mode,
-    pub pos_mode: Vec<Fix>,
+    pub pos_mode: FixList,
     /// Number of satellites used
     pub num_sv: Option<u8>,
     /// Horizontal Dilution of Precision
@@ -106,7 +106,12 @@ mod tests {
                 ns: Some(NorthSouth::North),
                 lon: Some(Degree(0.12293799999999999)), // floats ¯\_(ツ)_/¯
                 ew: Some(EastWest::West),
-                pos_mode: vec![Fix::AutonomousGNSSFix, Fix::NoFix, Fix::NoFix, Fix::NoFix],
+                pos_mode: FixList::from([
+                    Fix::AutonomousGNSSFix,
+                    Fix::NoFix,
+                    Fix::NoFix,
+                    Fix::NoFix,
+                ]),
                 num_sv: Some(7),
                 hdop: Some(1.18),
                 alt: Some(Meter(111.5)),

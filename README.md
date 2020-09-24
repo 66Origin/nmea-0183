@@ -1,5 +1,5 @@
 # NMEA-0183
-A nmea-0183 sentence parser written in Rust using Nom.
+A nmea-0183 sentence parser written in Rust using Nom. This is a `no_std` crate and can be used in embedded applications.
 
 <p align="center">
   <a href="https://crates.io/crates/nmea-0183">

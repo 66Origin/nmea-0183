@@ -12,7 +12,6 @@ mod sentence_tests {
     use crate::fields::parameter::*;
     use crate::fields::speed::*;
     use crate::messages::*;
-
     use chrono::naive::{NaiveDate, NaiveTime};
 
     #[test]
@@ -163,7 +162,7 @@ mod sentence_tests {
                 total_msgs: 3,
                 msg_num: 1,
                 satellite_num: 11,
-                satellites: vec![
+                satellites: SatelliteInViewList::from([
                     SatelliteInView {
                         id: Some(3),
                         elv: Some(Degree(3.)),
@@ -188,7 +187,7 @@ mod sentence_tests {
                         az: Some(Degree(292.)),
                         cno: Some(DBHZ(0.)),
                     },
-                ],
+                ]),
             }),
         };
 
@@ -340,7 +339,12 @@ mod sentence_tests {
                 ns: Some(NorthSouth::North),
                 lon: Some(Degree(0.12293799999999999)), // floats ¯\_(ツ)_/¯
                 ew: Some(EastWest::West),
-                pos_mode: vec![Fix::AutonomousGNSSFix, Fix::NoFix, Fix::NoFix, Fix::NoFix],
+                pos_mode: FixList::from([
+                    Fix::AutonomousGNSSFix,
+                    Fix::NoFix,
+                    Fix::NoFix,
+                    Fix::NoFix,
+                ]),
                 num_sv: Some(7),
                 hdop: Some(1.18),
                 alt: Some(Meter(111.5)),

@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 use crate::fields::distance::Degree;
 use crate::fields::parameter::DBHZ;
 
@@ -156,3 +158,6 @@ pub struct SatelliteInView {
     /// Signal strength
     pub cno: Option<DBHZ>,
 }
+
+/// List of satellites in view. Maximum of 4 as per GSV definition.
+pub type SatelliteInViewList = ArrayVec<[SatelliteInView; 4]>;

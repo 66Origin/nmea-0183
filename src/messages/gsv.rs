@@ -14,7 +14,7 @@ pub struct GSVMessage {
     /// both the talker ID and the signalId
     pub satellite_num: u8,
     /// Satellites in view
-    pub satellites: Vec<SatelliteInView>,
+    pub satellites: SatelliteInViewList,
 }
 
 pub fn parse_gsv(input: &str) -> IResult<&str, GSVMessage> {
@@ -49,7 +49,7 @@ mod tests {
                 total_msgs: 3,
                 msg_num: 1,
                 satellite_num: 11,
-                satellites: vec![
+                satellites: SatelliteInViewList::from([
                     SatelliteInView {
                         id: Some(3),
                         elv: Some(Degree(3.)),
@@ -74,7 +74,7 @@ mod tests {
                         az: Some(Degree(292.)),
                         cno: Some(DBHZ(0.)),
                     },
-                ],
+                ]),
             },
         ));
 
